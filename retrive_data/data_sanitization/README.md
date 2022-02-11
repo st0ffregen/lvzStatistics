@@ -5,16 +5,20 @@
 * remove not unique urls
 
 # To be done
-* delete articles who not belong to lvz (via key-value-pair in context tag)
+* erkenntlich machen der  articles from other creators via contextTag not like '"author":{"@type":"Organization","name":"LVZ"}'
 * alle artikel nochmal runterladen um autor anhand von kursiv geschriebenen text zu filtern
     * autor erstmal anhand von securen schema "Von abc" herausfinden um Menge zu verkleinern
     * mit dem kursiv schema koennen keine lvz plus artikel erkannt werden, muss manuell gemacht werden (oder per benutzer, aber lieber nicht)!
     * damit warten, falls ich nochmal was runterladen muss
 
 # other
-* what replaceUrls.py does can probably be archived in sql too
 * analyzeDataAndMoveToElastic can probably be removed
 
+# infos ueber datensatz (all_downloaded_articles.db)
+* free: 296903
+* not free: 65718
+* from lvz: 197532
+* not from lvz: 165089
 
 ## infos ueber skript (retrieveDataFromArticle.py)
 * notLVZ sollte mit "nicht lvz" des datensatzes uebereinstimmen
