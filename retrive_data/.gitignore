@@ -1,0 +1,3 @@
+data_download/data/*
+data_download/logs/*
+data_sanitization/logs/*
