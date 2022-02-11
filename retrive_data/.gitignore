@@ -1,3 +1,4 @@
 data_download/data/*
 data_download/logs/*
+data_sanitization/data/*
 data_sanitization/logs/*
