@@ -5,16 +5,17 @@
 * remove not unique urls
 
 # To be done
-* erkenntlich machen der  articles from other creators via contextTag not like '"author":{"@type":"Organization","name":"LVZ"}'
+* artikel bis zum 06.11.2021 runterladen, dann habe ich genau 10 Jahre LVZ
+* alle artikel in articles_with_basic_information ueberfuehren
 * alle artikel nochmal runterladen um autor anhand von kursiv geschriebenen text zu filtern
     * autor erstmal anhand von securen schema "Von abc" herausfinden um Menge zu verkleinern
     * mit dem kursiv schema koennen keine lvz plus artikel erkannt werden, muss manuell gemacht werden (oder per benutzer, aber lieber nicht)!
     * damit warten, falls ich nochmal was runterladen muss
 
 # other
-* analyzeDataAndMoveToElastic can probably be removed
+* analyzeDataAndMoveToElastic.log can probably be removed
 
-# infos ueber datensatz (all_downloaded_articles.db)
+## infos ueber datensatz (all_downloaded_articles.db)
 * free: 296903
 * not free: 65718
 * from lvz: 197532
