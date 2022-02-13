@@ -1,1 +1,45 @@
-{"@context":"http://schema.org","@type":"NewsArticle","genre":"News","datePublished":"2007-11-09T18:41:18+00:00","dateModified":"2007-11-09T18:41:18+00:00","thumbnailUrl":"https://mar.prod.image.rndtech.de/var/storage/images/lvz/mitteldeutschland/news/oman-urteil-milbradt-lehnt-gnadengesuch-ab/195214034-2-ger-DE/Oman-Urteil-Milbradt-lehnt-Gnadengesuch-ab_master_reference.jpg","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.lvz.de/Region/Mitteldeutschland/Oman-Urteil-Milbradt-lehnt-Gnadengesuch-ab"},"author":{"@type":"Organization","name":"DPA"},"headline":"- Oman-Urteil: Milbradt lehnt Gnadengesuch ab","description":"Ministerpräsident Georg Milbradt (CDU) hat das Gnadengesuch der im Oman zu lebenslanger Haft verurteilten Chemnitzerin Dana Gerlich abgelehnt. Dies bestätigte gestern ein Sprecher der Sächsischen Staatskanzlei.","articleBody":"Gründe wollte er nicht angeben. „Wir kommentieren eine Entscheidung über eine Begnadigung prinzipiell nicht“, sagte er. Die 33-Jährige, ihr omanischer Freund sowie zwei weitere Männer waren 2004 in dem Sultanat wegen eines Mordkomplotts verurteilt worden. Seit Oktober 2005 verbüßt Gerlich ihre Strafe in Chemnitz. Das Gericht im Oman sah es als erwiesen an, dass die Fünf für den Tod von Gerlichs Vater verantwortlich sind. Sie sollen den Mord wegen einer außerehelichen Beziehung des Mannes in Auftrag gegeben haben. Der 51-Jährige war 2003 während eines Besuchs bei seiner Tochter im Oman erschossen worden. Dort arbeitete Dana Gerlich als Physiotherapeutin. Der Staatschef des Oman, Sultan Kabus Ibn Said, erklärte sich bereit, Gerlich ausreisen zu lassen, wenn sie in Deutschland frühestens nach fünf Jahren freigelassen werde. Das Chemnitzer Landgericht entschied, dass ein im Oman gefälltes Urteil auch in Deutschland in vollem Umfang vollstreckt werden muss. Dieser Beitrag erschien am 9.11.2007. dpa","isAccessibleForFree":"True","isPartOf":{"@type":["CreativeWork","Product"],"name":"Leipziger Volkszeitung","productID":"lvz.de:basic"},"publisher":{"@type":"Organization","name":"Leipziger Volkszeitung","logo":{"@type":"ImageObject","url":"https://www.lvz.de/bundles/molasset/images/sites/desktop/lvz/logo_publisher.png"}},"image":{"@type":"ImageObject","name":"Oman-Urteil-Milbradt-lehnt-Gnadengesuch-ab.jpg","url":"https://mar.prod.image.rndtech.de/var/storage/images/lvz/mitteldeutschland/news/oman-urteil-milbradt-lehnt-gnadengesuch-ab/195214034-2-ger-DE/Oman-Urteil-Milbradt-lehnt-Gnadengesuch-ab_reference_4_3.jpg","description":"Der ehemalige sächsische Ministerpräsident Georg Milbradt (CDU).","copyrightHolder":"dpa","height":1200,"width":1600}}
+{
+  "@context": "http://schema.org",
+  "@type": "NewsArticle",
+  "genre": "News",
+  "datePublished": "2007-11-09T18:41:18+00:00",
+  "dateModified": "2007-11-09T18:41:18+00:00",
+  "thumbnailUrl": "https://mar.prod.image.rndtech.de/var/storage/images/lvz/mitteldeutschland/news/oman-urteil-milbradt-lehnt-gnadengesuch-ab/195214034-2-ger-DE/Oman-Urteil-Milbradt-lehnt-Gnadengesuch-ab_master_reference.jpg",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.lvz.de/Region/Mitteldeutschland/Oman-Urteil-Milbradt-lehnt-Gnadengesuch-ab"
+  },
+  "author": {
+    "@type": "Organization",
+    "name": "DPA"
+  },
+  "headline": "- Oman-Urteil: Milbradt lehnt Gnadengesuch ab",
+  "description": "Ministerpräsident Georg Milbradt (CDU) hat das Gnadengesuch der im Oman zu lebenslanger Haft verurteilten Chemnitzerin Dana Gerlich abgelehnt. Dies bestätigte gestern ein Sprecher der Sächsischen Staatskanzlei.",
+  "articleBody": "Gründe wollte er nicht angeben. „Wir kommentieren eine Entscheidung über eine Begnadigung prinzipiell nicht“, sagte er. Die 33-Jährige, ihr omanischer Freund sowie zwei weitere Männer waren 2004 in dem Sultanat wegen eines Mordkomplotts verurteilt worden. Seit Oktober 2005 verbüßt Gerlich ihre Strafe in Chemnitz. Das Gericht im Oman sah es als erwiesen an, dass die Fünf für den Tod von Gerlichs Vater verantwortlich sind. Sie sollen den Mord wegen einer außerehelichen Beziehung des Mannes in Auftrag gegeben haben. Der 51-Jährige war 2003 während eines Besuchs bei seiner Tochter im Oman erschossen worden. Dort arbeitete Dana Gerlich als Physiotherapeutin. Der Staatschef des Oman, Sultan Kabus Ibn Said, erklärte sich bereit, Gerlich ausreisen zu lassen, wenn sie in Deutschland frühestens nach fünf Jahren freigelassen werde. Das Chemnitzer Landgericht entschied, dass ein im Oman gefälltes Urteil auch in Deutschland in vollem Umfang vollstreckt werden muss. Dieser Beitrag erschien am 9.11.2007. dpa",
+  "isAccessibleForFree": "True",
+  "isPartOf": {
+    "@type": [
+      "CreativeWork",
+      "Product"
+    ],
+    "name": "Leipziger Volkszeitung",
+    "productID": "lvz.de:basic"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Leipziger Volkszeitung",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.lvz.de/bundles/molasset/images/sites/desktop/lvz/logo_publisher.png"
+    }
+  },
+  "image": {
+    "@type": "ImageObject",
+    "name": "Oman-Urteil-Milbradt-lehnt-Gnadengesuch-ab.jpg",
+    "url": "https://mar.prod.image.rndtech.de/var/storage/images/lvz/mitteldeutschland/news/oman-urteil-milbradt-lehnt-gnadengesuch-ab/195214034-2-ger-DE/Oman-Urteil-Milbradt-lehnt-Gnadengesuch-ab_reference_4_3.jpg",
+    "description": "Der ehemalige sächsische Ministerpräsident Georg Milbradt (CDU).",
+    "copyrightHolder": "dpa",
+    "height": 1200,
+    "width": 1600
+  }
+}

@@ -3,10 +3,10 @@
 * delete links which do not start with http(s)?://(www.)?lvz.de/
 * strip beginning of url (e.g http://lvz.de/ein-artikel to /ein-artikel) via replaceUrls.py script
 * remove not unique urls
+* artikel vor 2010 loeschen, dann habe ich genau 12 Jahre LVZ
 
 # To be done
-* artikel bis zum 31.12.2021 runterladen (13.02: logs checken!), artikel vor 2012 loeschen, dann habe ich genau 10 Jahre LVZ
-* alle artikel in articles_with_basic_information ueberfuehren
+* alle artikel in articles_with_basic_information ueberfuehren, error logs klaeren
 * alle artikel nochmal runterladen um autor anhand von kursiv geschriebenen text zu filtern
     * autor erstmal anhand von securen schema "Von abc" herausfinden um Menge zu verkleinern
     * mit dem kursiv schema koennen keine lvz plus artikel erkannt werden, muss manuell gemacht werden (oder per benutzer, aber lieber nicht)!
