@@ -8,6 +8,7 @@
 * merged downloadedArticles-X.db to ../../data_sanitization/all_downloaded_articles.db
 
 # To be done
+* logs von -6.log checken, gab integrity errors
 
 # other
 * what replaceUrls.py does can probably be archived in sql too
