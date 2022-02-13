@@ -82,7 +82,10 @@ def getArticleNamespace(url):
 
 
 def getData(json, key):
-    return json[key]
+    try:
+        return json[key]
+    except KeyError:
+        return None
 
 
 def removeUnwantedPunctuation(string):
@@ -128,6 +131,11 @@ def getAuthorStringSecure(articleBody, url):  # only recognize authors after sch
             author_is_abbreviation_array.append(True)
             continue
 
+        elif re.match('\w{1}\. \w{1}\.', split): # commonly used abbreviations (e.g. "F. D.")
+            authorArray.append(split)
+            author_is_abbreviation_array.append(True)
+            continue
+
         elif (len(authorName) < 6 or len(authorName) > 25) and '/' not in authorName:
             raise AuthorError(f'Too long/short author name for {url}: {authorName}')
 
@@ -167,20 +175,26 @@ def getAuthorStringSecure(articleBody, url):  # only recognize authors after sch
 
 
 
-def save_to_database(articles):
+def save_to_database(articles, logger):
     con = sqlite3.connect('../data/articles_with_basic_information.db')
     cur = con.cursor()
+    global failed
+
 
     for article in articles:
         if article is not None:
-            print(article.url)
-            cur.execute('insert into articles values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                        (None, article.url, article.context_tag, article.organization, str(article.author_array),
-                         str(article.author_is_abbreviation_array),
-                         article.genre, str(article.article_namespace_array), article.published_at, article.modified_at,
-                         article.is_free, article.headline, article.text, datetime.utcnow().isoformat()))
-
+            try:
+                updated_at = datetime.utcnow().isoformat()
+                cur.execute('insert into articles values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                            (None, article.url, article.context_tag, article.organization, str(article.author_array),
+                             str(article.author_is_abbreviation_array),
+                             article.genre, str(article.article_namespace_array), article.published_at, article.modified_at,
+                             article.is_free, article.headline, article.text, updated_at, updated_at))
+            except sqlite3.IntegrityError as e:
+                logger.warning(f'error for article {article.url} : {e}')
+                failed += 1
     con.commit()
+
 
 
 def aggregateData(article, logger):
@@ -202,8 +216,12 @@ def aggregateData(article, logger):
         dateModified = getData(jsonContent, 'dateModified')
         headline = getData(jsonContent, 'headline')
         text = getData(jsonContent, 'articleBody')
-        authorArray, author_is_abbreviation_array = getAuthorStringSecure(text, article["url"])
         isFree = getData(jsonContent, 'isAccessibleForFree')
+        if text is not None:
+            authorArray, author_is_abbreviation_array = getAuthorStringSecure(text, article["url"])
+        else:
+            authorArray, author_is_abbreviation_array = [], []
+
 
         article_object = Article(article['url'], article['contextTag'], organization, authorArray, author_is_abbreviation_array,
                                  genre, articleNamespace, datePublished, dateModified, isFree, headline, text)
@@ -230,16 +248,17 @@ def aggregateData(article, logger):
 def main():
     logger = configureLogger()
 
-    for l in range(0, 17):
+    for l in range(0, 53):
         offset = l * 7000
-        limit = 70
+        limit = 7000
+        logger.info('start run from ' + str(offset) + ' to ' + str(offset + limit))
         articles = loadDownloadedData('../data/all_downloaded_articles.db', limit, offset)
         articles_for_db = []
         for article in articles:
             articles_for_db.append(aggregateData(article, logger))
 
-        save_to_database(articles_for_db)
-        break
+        save_to_database(articles_for_db, logger)
+
 
     print('success: ' + str(success))
     print('failed: ' + str(failed))

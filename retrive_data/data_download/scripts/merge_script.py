@@ -132,11 +132,7 @@ mainDB = '../../data_sanitization/data/all_downloaded_articles.db'     # This is
 # merged to.
 
 otherDBs = [
-    '../data/downloadedArticles-1.db',
-    '../data/downloadedArticles-2.db',
-    '../data/downloadedArticles-3.db',
-    '../data/downloadedArticles-4.db',
-    '../data/downloadedArticles-5.db'
+    '../data/downloadedArticles-6.db'
 ]
 
 
