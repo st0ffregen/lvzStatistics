@@ -5,7 +5,7 @@
 * remove not unique urls
 
 # To be done
-* artikel bis zum 06.11.2021 runterladen, dann habe ich genau 10 Jahre LVZ
+* artikel bis zum 31.12.2021 runterladen (13.02: logs checken!), artikel vor 2012 loeschen, dann habe ich genau 10 Jahre LVZ
 * alle artikel in articles_with_basic_information ueberfuehren
 * alle artikel nochmal runterladen um autor anhand von kursiv geschriebenen text zu filtern
     * autor erstmal anhand von securen schema "Von abc" herausfinden um Menge zu verkleinern

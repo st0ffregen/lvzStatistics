@@ -17,7 +17,7 @@ cur = None
 def connectToDb():
 	global con
 	try:
-		con = sqlite3.connect('articles.db')
+		con = sqlite3.connect('../data/articles.db')
 	except sqlite3.OperationalError as e:
 		logger.warn("error while establishing connection to db: {e}")
 		logger.warn("exiting")
@@ -41,7 +41,7 @@ def configureLogger():
 
 	formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
 
-	file_handler = logging.FileHandler('logs/scrapeArchive.log')
+	file_handler = logging.FileHandler('../logs/scrapeArchive.log')
 	file_handler.setFormatter(formatter)
 	logger.addHandler(file_handler)
 
@@ -51,8 +51,10 @@ def configureLogger():
 def writeArticleListToDb(articleDivs):
 	for article in articleDivs:
 		linkToArticle = article.find('a', {'class': 'pdb-full-newsticker-teaser-breadcrumb-headline-title-link'})['href']
-		cur.execute('insert into articles values (?,?)', (None, linkToArticle))
-
+		try:
+			cur.execute('insert into articles values (?,?)', (None, linkToArticle))
+		except sqlite3.IntegrityError as e:
+			logger.warn("error while inserting values: {e}")
 
 def scrapeSinglePage(year, month, day):
 	global totalArticleCount
@@ -74,10 +76,10 @@ def scrapeSinglePage(year, month, day):
 		writeArticleListToDb(articleDivs)
 
 def scrapeArchive():
-	for year in range(2018, 2022):
+	for year in range(2021, 2022):
 		for month in range(1, 13):
 			for day in range(1, 32):
-				if year == 2007 and month < 11:
+				if year == 2021 and month < 10:
 					continue
 				scrapeSinglePage(year, month, day)
 

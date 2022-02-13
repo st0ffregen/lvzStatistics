@@ -41,7 +41,7 @@ def configureLogger():
 
     formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
 
-    file_handler = logging.FileHandler('logs/downloadArticles.log')
+    file_handler = logging.FileHandler('../logs/downloadArticles-6.log')
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
@@ -49,9 +49,9 @@ def configureLogger():
 
 
 def getUrls(offset, limit):
-    con = sqlite3.connect('articles.db')
+    con = sqlite3.connect('../data/articles.db')
     cur = con.cursor()
-    cur.execute('select articleUrl from articles limit ' + str(limit) + ' offset ' + str(offset))
+    cur.execute('select articleUrl from articles where id > 510777 limit ' + str(limit) + ' offset ' + str(offset))
     entries = cur.fetchall()
     urls = []
     for row in entries:
@@ -61,7 +61,7 @@ def getUrls(offset, limit):
 
 
 def getDbCursor():
-    con = sqlite3.connect('downloadedArticles.db')
+    con = sqlite3.connect('../data/downloadedArticles-6.db')
     return con, con.cursor()
 
 
@@ -125,7 +125,7 @@ def main():
     logger = configureLogger()
     logger.info('start scaper')
 
-    for i in range(int(sys.argv[1]), int(sys.argv[2])):  # 100 per run, 363,491 articles in total so 0 to 3635
+    for i in range(0, 77):  # 100 per run, 363,491 articles in total so 0 to 3635
         offset = i * 100
         limit = 100
         logger.info('start run from ' + str(offset) + ' to ' + str(offset + limit))
