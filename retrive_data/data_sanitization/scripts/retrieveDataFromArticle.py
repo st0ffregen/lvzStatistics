@@ -109,7 +109,7 @@ def getAuthorStringSecure(articleBody, url):  # only recognize authors after sch
 
     if 'Von' not in lastCharacters:
         # raise AuthorError(f'No \'Von\' in last characters for {url}')
-        return [], []
+        return None, None
 
     partAfterVon = lastCharacters.split('Von')[-1:][0]
     authorParts = partAfterVon.split(' ')
@@ -119,9 +119,19 @@ def getAuthorStringSecure(articleBody, url):  # only recognize authors after sch
         authorName += ' ' + removeUnwantedPunctuation(part)
 
     authorName = authorName.strip()
-    authorNameSplit = authorName.split('/')
     authorArray = []
     author_is_abbreviation_array = []
+
+    if '/' in authorName:
+        authorNameSplit = authorName.split('/')
+    elif ' und ' in authorName:
+        authorNameSplit = authorName.split(' und ')
+    elif ' , ' in authorName:
+        authorNameSplit = authorName.split(' , ')
+    else:
+        authorNameSplit = [authorName]
+
+
 
     for split in authorNameSplit:
         if ' ' not in split and len(split) > 1 and len(split) < 6:
@@ -136,8 +146,8 @@ def getAuthorStringSecure(articleBody, url):  # only recognize authors after sch
             author_is_abbreviation_array.append(True)
             continue
 
-        elif (len(authorName) < 6 or len(authorName) > 25) and '/' not in authorName:
-            raise AuthorError(f'Too long/short author name for {url}: {authorName}')
+        elif len(split) == 0 or len(split) > 25:
+            return None, None
 
         else:
             authorArray.append(split)
@@ -220,7 +230,7 @@ def aggregateData(article, logger):
         if text is not None:
             authorArray, author_is_abbreviation_array = getAuthorStringSecure(text, article["url"])
         else:
-            authorArray, author_is_abbreviation_array = [], []
+            authorArray, author_is_abbreviation_array = None, None
 
 
         article_object = Article(article['url'], article['contextTag'], organization, authorArray, author_is_abbreviation_array,
