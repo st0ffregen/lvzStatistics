@@ -100,19 +100,24 @@ def removeUnwantedPunctuation(string):
     return string.strip()
 
 
-def getAuthorStringSecure(articleBody, url):  # only recognize authors after schema: "Von autorName"
-    lastCharacters = articleBody[-30:]
+
+def getAuthorString(articleBody, secure=False):
+    lastCharacters = articleBody[-80:]
 
     for redaktionAbbrevation in redaktionsAuthorList:
         if lastCharacters.endswith(redaktionAbbrevation):
             return redaktionAbbrevation, False
 
-    if 'Von' not in lastCharacters:
-        # raise AuthorError(f'No \'Von\' in last characters for {url}')
-        return None, None
+    if secure: # only recognize authors after schema: "Von autorName"
+        if 'Von' not in lastCharacters:
+            # raise AuthorError(f'No \'Von\' in last characters for {url}')
+            return None, None
 
-    partAfterVon = lastCharacters.split('Von')[-1:][0]
-    authorParts = partAfterVon.split(' ')
+        partAfterVon = lastCharacters.split('Von')[-1:][0]
+        authorParts = partAfterVon.split(' ')
+    else:
+        authorParts = lastCharacters.split(' ')
+
     authorName = ''
 
     for part in authorParts:
@@ -124,16 +129,23 @@ def getAuthorStringSecure(articleBody, url):  # only recognize authors after sch
 
     if '/' in authorName:
         authorNameSplit = authorName.split('/')
+    elif ', ' in authorName:
+        authorNameSplit = authorName.split(', ')
+
+        if ' und ' in authorNameSplit[-1]: # recognize pattern: "a, b, c und d"
+            lastElement = authorNameSplit[-1]
+            lastTwoNames = lastElement.split(' und ')
+            authorNameSplit = authorNameSplit[:-1]
+            authorNameSplit.append(lastTwoNames[0])
+            authorNameSplit.append(lastTwoNames[1])
+
     elif ' und ' in authorName:
         authorNameSplit = authorName.split(' und ')
-    elif ' , ' in authorName:
-        authorNameSplit = authorName.split(' , ')
     else:
         authorNameSplit = [authorName]
 
-
-
     for split in authorNameSplit:
+        split = split.strip()
         if ' ' not in split and len(split) > 1 and len(split) < 6:
             if split.lower() == 'lvz':
                 split = 'LVZ'
@@ -141,7 +153,7 @@ def getAuthorStringSecure(articleBody, url):  # only recognize authors after sch
             author_is_abbreviation_array.append(True)
             continue
 
-        elif re.match('\w{1}\. \w{1}\.', split): # commonly used abbreviations (e.g. "F. D.")
+        elif re.match('\w{1}\. \w{1}\.', split):  # commonly used abbreviations (e.g. "F. D.")
             authorArray.append(split)
             author_is_abbreviation_array.append(True)
             continue
@@ -153,36 +165,7 @@ def getAuthorStringSecure(articleBody, url):  # only recognize authors after sch
             authorArray.append(split)
             author_is_abbreviation_array.append(False)
 
-
     return authorArray, author_is_abbreviation_array
-
-
-# def getAuthorString(articleBody, url):
-# 	lastCharacters = articleBody[-25:]
-
-# 	for redaktionAbbrevation in redaktionsAuthorList:
-# 		if lastCharacters.endswith(redaktionAbbrevation):
-# 			return redaktionAbbrevation, False
-
-# 	authorParts = lastCharacters.split('.')[-1:][0].split(' ')
-# 	authorName = ''
-
-# 	for part in authorParts:
-# 		authorName += ' ' + removeUnwantedPunctuation(part)
-
-# 	authorName = authorName.strip()
-
-# 	if authorName.startswith('Von'):
-# 		authorName = authorName[3:].strip()
-
-# 	if ' ' not in authorName and len(authorName) > 1 and len(authorName) < 6:
-# 		return authorName, True
-
-# 	if (len(authorName) < 6 or len(authorName) > 20) and '/' not in authorName:
-# 		raise AuthorError(f'Too long/short author name for {url}: {authorName}')
-
-# 	return authorName, False
-
 
 
 def save_to_database(articles, logger):
@@ -195,10 +178,20 @@ def save_to_database(articles, logger):
         if article is not None:
             try:
                 updated_at = datetime.utcnow().isoformat()
+
+                if article.author_array is not None:
+                    article.author_array = str(article.author_array)
+
+                if article.author_is_abbreviation_array is not None:
+                    article.author_is_abbreviation_array = str(article.author_is_abbreviation_array)
+
+                if article.article_namespace_array is not None:
+                    article.article_namespace_array = str(article.article_namespace_array)
+
                 cur.execute('insert into articles values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                            (None, article.url, article.context_tag, article.organization, str(article.author_array),
-                             str(article.author_is_abbreviation_array),
-                             article.genre, str(article.article_namespace_array), article.published_at, article.modified_at,
+                            (None, article.url, article.context_tag, article.organization, article.author_array,
+                             article.author_is_abbreviation_array,
+                             article.genre, article.article_namespace_array, article.published_at, article.modified_at,
                              article.is_free, article.headline, article.text, updated_at, updated_at))
             except sqlite3.IntegrityError as e:
                 logger.warning(f'error for article {article.url} : {e}')
@@ -227,8 +220,8 @@ def aggregateData(article, logger):
         headline = getData(jsonContent, 'headline')
         text = getData(jsonContent, 'articleBody')
         isFree = getData(jsonContent, 'isAccessibleForFree')
-        if text is not None:
-            authorArray, author_is_abbreviation_array = getAuthorStringSecure(text, article["url"])
+        if text is not None and organization == 'lvz':
+            authorArray, author_is_abbreviation_array = getAuthorString(text, True)
         else:
             authorArray, author_is_abbreviation_array = None, None
 
