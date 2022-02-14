@@ -4,13 +4,14 @@
 * strip beginning of url (e.g http://lvz.de/ein-artikel to /ein-artikel) via replaceUrls.py script
 * remove not unique urls
 * artikel vor 2010 loeschen, dann habe ich genau 12 Jahre LVZ
+* alle artikel in articles_with_basic_information ueberfuehren
 
 # To be done
-* alle artikel in articles_with_basic_information ueberfuehren, error logs klaeren
 * alle artikel nochmal runterladen um autor anhand von kursiv geschriebenen text zu filtern
     * autor erstmal anhand von securen schema "Von abc" herausfinden um Menge zu verkleinern
-    * mit dem kursiv schema koennen keine lvz plus artikel erkannt werden, muss manuell gemacht werden (oder per benutzer, aber lieber nicht)!
+    * mit dem kursiv schema koennen keine lvz plus artikel erkannt werden, muss manuell gemacht werden (oder account anlegen)!
     * damit warten, falls ich nochmal was runterladen muss
+* verknuepfung autoren zu autorenkuerzeln
 
 # other
 * analyzeDataAndMoveToElastic.log can probably be removed
