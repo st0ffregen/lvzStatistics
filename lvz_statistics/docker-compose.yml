@@ -18,7 +18,7 @@ services:
       # - http.cors.allow-origin="*"
       # - http.cors.allow-methods=OPTIONS, HEAD, GET, POST, PUT, DELETE
       # - http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type, Content-Length
-      - logger.level=debug
+      - logger.level=info
     ulimits:
       memlock:
         soft: -1
@@ -28,3 +28,17 @@ services:
     ports:
       - "9200:9200"
       - "9300:9300"
+
+  flaskapi:
+    build: flaskapi/
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./flaskapi:/usr/src/api
+    depends_on:
+      - elasticsearch
+    environment:
+      WAIT_HOSTS: elasticsearch:9200
+    env_file:
+      - ./.env
+    restart: always
