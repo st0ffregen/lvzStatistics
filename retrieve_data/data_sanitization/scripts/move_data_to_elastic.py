@@ -41,6 +41,13 @@ def configureLogger():
     return logger
 
 
+def literal_eval_check_none(node_or_string):
+    if node_or_string is None:
+        return None
+
+    return literal_eval(node_or_string)
+
+
 def loadArticles(limit, offset):
     con = sqlite3.connect('../data/articles_with_basic_information_production.db')
     cur = con.cursor()
@@ -49,16 +56,7 @@ def loadArticles(limit, offset):
     articles = []
     for row in entries:
         try:
-            author_array, author_is_abbreviation_array, article_namespace_array = row[4], row[5], row[7]
-
-            if author_array is not None:
-                author_array = literal_eval(author_array)
-            if author_is_abbreviation_array is not None:
-                author_is_abbreviation_array = literal_eval(author_is_abbreviation_array)
-            if article_namespace_array is not None:
-                article_namespace_array = literal_eval(article_namespace_array)
-
-            article = Article(row[1], row[2], row[3], author_array, author_is_abbreviation_array, row[6], article_namespace_array, row[8], row[9], row[10], row[11], row[12])
+            article = Article(row[1], row[2], row[3], literal_eval_check_none(row[4]), literal_eval_check_none(row[5]), row[6], literal_eval_check_none(row[7]), row[8], row[9], row[10], row[11], row[12])
         except (ValueError, TypeError) as e:
             print(row[4])
             print(row[5])
