@@ -106,7 +106,7 @@ def getAuthorString(articleBody, secure=False):
 
     for redaktionAbbrevation in redaktionsAuthorList:
         if lastCharacters.endswith(redaktionAbbrevation):
-            return redaktionAbbrevation, False
+            return ['lvz'], False
 
     if secure: # only recognize authors after schema: "Von autorName"
         if 'Von' not in lastCharacters:

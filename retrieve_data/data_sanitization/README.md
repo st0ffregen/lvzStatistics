@@ -7,6 +7,8 @@
 * alle artikel in articles_with_basic_information ueberfuehren
 
 # To be done
+* retrieveData nochmal laufen lassen, manchmal wurde "red." etc. statt array als author geschrieben
+* autor:innen von aelteren Artikel nachtragen, durch abgleichen vorhandener autor:innen in neueren artikeln
 * alle artikel nochmal runterladen um autor anhand von kursiv geschriebenen text zu filtern
     * autor erstmal anhand von securen schema "Von abc" herausfinden um Menge zu verkleinern
     * mit dem kursiv schema koennen keine lvz plus artikel erkannt werden, muss manuell gemacht werden (oder account anlegen)!
