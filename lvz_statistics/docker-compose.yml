@@ -42,3 +42,17 @@ services:
     env_file:
       - ./.env
     restart: always
+
+  nginx:
+    build:
+      context: ./nginx/
+      args:
+        APP_ENVIRONMENT: ${APP_ENVIRONMENT}
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/src:/usr/share/nginx/html/lvz_statistics:ro
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - elasticsearch
+      - flaskapi

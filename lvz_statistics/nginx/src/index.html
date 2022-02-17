@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Die LVZ in Zahlen</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="robots" content="index, follow"/>
+
+    <meta name="description" content="Statistiken von luhze.de. Worüber schreibt luhze.de? Welche*r Autor*in führt das Ranking an? Wer schreibt die meisten Artikel? Seit wann ist wer dabei? etc."/>
+    <meta name="keywords" content="luhze, Hochschulzeitung, Leipziger unabhängige Hochschulzeitung, Uni Leipzig, Universität Leipzig, Studierende, Studium, Zeitung, Journalismus, Statistiken"/>
+    <meta name="author" content="Niclas Stoffregen"/>
+    <meta name="copyright" content="Niclas Stoffregen"/>
+
+    <meta prefix="og: http://ogp.me/ns#" property="og:type" content="website" />
+    <meta prefix="og: http://ogp.me/ns#" property="og:title" content="Statistiken von luhze.de" />
+    <meta prefix="og: http://ogp.me/ns#" property="og:description" content="Worüber schreibt luhze.de? Welche*r Autor*in führt das Ranking an? Wer schreibt die meisten Artikel? Seit wann ist wer dabei? etc." />
+    <meta prefix="og: http://ogp.me/ns#" property="og:image" content="images/preview.png" />
+    <meta prefix="og: http://ogp.me/ns#" property="og:url" content="https://stoffregen.io" />
+    <meta prefix="og: http://ogp.me/ns#" property="og:locale" content="de_DE"/>
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@st0ffregen" />
+    <meta name="twitter:domain" content="https://stoffregen.io" />
+    <meta name="twitter:title" content="Statistiken von luhze.de" />
+    <meta name="twitter:description" content="Worüber schreibt luhze.de? Welche*r Autor*in führt das Ranking an? Wer schreibt die meisten Artikel? Seit wann ist wer dabei? etc." />
+    <meta name="twitter:image" content="https://stoffregen.io/luhzeStats/images/preview.png" />
+
+    <link rel="stylesheet" type="text/css" href="css/canvas.css">
+    <link rel="stylesheet" type="text/css" href="css/index.css">
+    <link rel="stylesheet" type="text/css" href="css/loader.css">
+    <link rel="stylesheet" type="text/css" href="css/ranking.css">
+    <link rel="stylesheet" type="text/css" href="css/autocomplete.css">
+
+</head>
+<body>
+
+<div class="containter">
+    <div class="col-sm-2" id="loader">
+        <div id="bars2">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+
+    <div class="graphContent">
+
+        <div class="socialmedia">
+            <ul class="socialmedialist">
+                <li><a href="https://github.com/st0ffregen/lvzStatistics" title="Schau dir den Code auf GitHub an"><img
+                        src="images/github.png"></a></li>
+                <li><a href="https://twitter.com/st0ffregen" title="Folge mir auf Twitter"><img
+                        src="images/twitter.png"></a></li>
+            </ul>
+        </div>
+
+        <h1 class="main-header">Die LVZ in Zahlen</h1>
+
+        <div class="graph-content-charts">
+            <h1 class="luhzeSprichtHeader">Darüber spricht lvz.de</h1>
+            <div id="luhzeSpricht">
+                <div id="luhzeSprichtInput">
+                    <form id="luhzeSprichtForm" autocomplete="off" action="">
+                        <div class="autocomplete" style="width:100%;">
+                            <input id="wordOccurrenceInput" type="text" name="word" placeholder="Gib einen Begriff ein">
+
+                        </div>
+                    </form>
+                    <a class="word-occurrence-button add-word-button" href="javascript:addEmojiToInput()" title="Verbinde mehrere Wörter miteinander">&#10133;</a>
+                    <a class="word-occurrence-button delete-chart-button" href="javascript:deleteChart()" title="Entfernt alle Wörter aus dem Diagramm">&#10060;</a>
+                </div>
+                <div class="word-occurrence-canvas-container">
+                    <canvas id="wordOccurrenceChart"></canvas>
+                </div>
+            </div>
+            <hr>
+            <p class="go-back-in-time-graph-content">
+			<span class="go-back-in-time-span">
+				Daten vom <span id="go-back-in-time-date-graph-content">X</span>.
+				Gehe zurück:
+				<a href="javascript:displayGraphContent('back', 'day')">ein Tag</a>,
+				<a href="javascript:displayGraphContent('back', 'month')">ein Monat</a>,
+				<a href="javascript:displayGraphContent('back', 'year')">ein Jahr</a>.
+				<span class="go-forth-in-time-span">Gehe vor:
+					<a href="javascript:displayGraphContent('today')">heute</a>,
+					<a href="javascript:displayGraphContent('forth', 'day')">ein Tag</a>,
+					<a href="javascript:displayGraphContent('forth', 'month')">ein Monat</a>,
+					<a href="javascript:displayGraphContent('forth', 'year')">ein Jahr</a>.
+			</span>
+			</span>
+            </p>
+
+            <div class="canvas-container first-chart">
+                <canvas id="articlesTimelineChart"></canvas>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="articlesTimelineDerivativeChart"></canvas>
+            </div>
+
+
+            <h2>Autor*innen</h2>
+            <p class="chart-label-with-heading">Autor*innen Timeline</p>
+            <div id="authorTimelineChart" class="googleChartAuthor"></div>
+
+            <div class="canvas-container">
+                <canvas id="activeMembersChart"></canvas>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="activeMembersWithFourArticlesChart"></canvas>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="authorTopListChart"></canvas>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="authorAverageChart"></canvas>
+            </div>
+
+
+            <div class="canvas-container">
+                <canvas id="mostArticlesPerTimeChart"></canvas>
+            </div>
+
+
+            <div class="canvas-container">
+                <canvas id="averageCharactersPerDayChart"></canvas>
+            </div>
+
+
+            <h2>Ressorts</h2>
+            <p class="chart-label-with-heading">Ressort Timeline</p>
+            <div class="googleChartRessort" id="ressortTimelineChart"></div>
+
+            <div id="chartjs-tooltip"></div>
+            <div class="canvas-container">
+                <canvas id="ressortTopListChart"></canvas>
+            </div>
+
+            <p class="chart-label">Anzahl von Artikel pro Ressort (Klicke auf ein Ressort zum anzeigen/ausblenden)</p>
+            <div class="canvas-container many-label-canvas-container">
+                <canvas id="ressortArticlesTimelineChart"></canvas>
+            </div>
+
+            <p class="chart-label">Anzahl von Artikel pro Ressort pro Quartal (Klicke auf ein Ressort zum
+                anzeigen/ausblenden)</p>
+            <div class="canvas-container many-label-canvas-container">
+                <canvas id="ressortArticlesTimelineDerivativeChart"></canvas>
+            </div>
+
+
+            <div class="canvas-container">
+                <canvas id="ressortAverageChart"></canvas>
+            </div>
+
+
+            <div class="upArrowButtonDiv">
+                <a href="javascript:topFunction()" class="upArrowButton" title="Springe zum Seitenanfang"><img
+                        src="images/arrowUp.png"></a>
+            </div>
+
+            <div class="footer">
+                <p><a href="https://stoffregen.io/privacy.html">Datenschutz</a> | <a
+                        href="https://stoffregen.io/about.html">Impressum</a></p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<script type="text/javascript" src="js/ranking/ranking.js"></script>
+<script type="text/javascript" src="js/external/Chart.js"></script>
+
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/luxon@1.19.3"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@0.2.0"></script>
+
+
+<script type="text/javascript" src="js/helperFunctions/helperFunctions.js"></script>
+<script type="text/javascript" src="js/staticCharts/financialCharts.js"></script>
+<script type="text/javascript" src="js/staticCharts/googleCharts.js"></script>
+<script type="text/javascript" src="js/staticCharts/barCharts.js"></script>
+<script type="text/javascript" src="js/helperFunctions/fetchApi.js"></script>
+<script type="text/javascript" src="js/staticCharts/displayStaticCharts.js"></script>
+<script type="text/javascript" src="js/wordOccurence/wordOccurrence.js"></script>
+<script type="text/javascript" src="js/wordOccurence/autocomplete.js"></script>
+<script type="text/javascript" src="js/main.js"></script>
+<script type="text/javascript" src="js/helperFunctions/stickyGoBackInTime.js"></script>
+
+
+</body>
+</html>
