@@ -1,0 +1,246 @@
+
+.autocomplete {
+    /*the container must be positioned relative:*/
+    position: relative;
+    display: inline-block;
+}
+
+.autocomplete-occurrence {
+    float: right;
+}
+
+input {
+    border: 1px solid transparent;
+    background-color: #f1f1f1;
+
+}
+
+input[type=text] {
+    background-color: #fff;
+    width: 100%;
+}
+
+input[type=submit] {
+    background-color: DodgerBlue;
+    color: #fff;
+}
+
+.autocomplete-items {
+    position: absolute;
+    border: 1px solid #d4d4d4;
+    border-bottom: none;
+    border-top: none;
+    z-index: 99;
+    /*position the autocomplete items to be the same width as the container:*/
+    top: 100%;
+    left: 0;
+    right: 0;
+}
+
+.autocomplete-items div {
+    cursor: pointer;
+    background-color: #fff;
+    border-bottom: 1px solid #d4d4d4;
+}
+
+.autocomplete-items div:hover {
+    /*when hovering an item:*/
+    background-color: #e9e9e9;
+}
+
+.autocomplete-active {
+    /*when navigating through the items using the arrow keys:*/
+    background-color: DodgerBlue !important;
+    color: #ffffff;
+}
+
+#wordOccurrenceInput {
+    padding-right: 0;
+}
+
+.word-occurrence-button {
+    border: 1px solid transparent;
+    background-color: #fff;
+    text-decoration: none;
+    flex-basis: 5%;
+    text-align: center;
+}
+
+#luhzeSprichtInput {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+@media (min-width: 1px) {
+    input {
+        padding: 6px;
+        font-size: 13px;
+    }
+
+    .autocomplete-items div {
+        padding: 5px;
+        font-size: 13px;
+    }
+
+    .word-occurrence-button {
+        font-size: 13px;
+        padding: 6px;
+    }
+
+    #luhzeSprichtForm {
+        flex-basis: 80%;
+    }
+
+}
+
+@media (min-width: 375px) {
+    input {
+        padding: 8px;
+        font-size: 15px;
+    }
+
+    .autocomplete-items div {
+        padding: 7px;
+        font-size: 15px;
+    }
+
+    .word-occurrence-button {
+        font-size: 15px;
+        padding: 8px;
+    }
+
+    #luhzeSprichtForm {
+        flex-basis: 65%;
+    }
+}
+
+@media (min-width: 576px) {
+    input {
+        padding: 9px;
+        font-size: 16px;
+    }
+
+    .autocomplete-items div {
+        padding: 8px;
+        font-size: 16px;
+    }
+
+    .word-occurrence-button {
+        font-size: 16px;
+        padding: 9px;
+    }
+
+    #luhzeSprichtForm {
+        flex-basis: 70%;
+    }
+
+}
+
+@media (min-width: 768px) {
+    input {
+        padding: 11px;
+        font-size: 17px;
+    }
+
+    .autocomplete-items div {
+        padding: 10px;
+        font-size: 17px;
+    }
+
+    .word-occurrence-button {
+        font-size: 17px;
+        padding: 11px;
+    }
+
+    #luhzeSprichtForm {
+        flex-basis: 75%;
+    }
+
+}
+
+@media (min-width: 992px) {
+    input {
+        padding: 12px;
+        font-size: 18px;
+    }
+
+    .autocomplete-items div {
+        padding: 11px;
+        font-size: 18px;
+    }
+
+    .word-occurrence-button {
+        font-size: 18px;
+        padding: 12px;
+    }
+
+    #luhzeSprichtForm {
+        flex-basis: 75%;
+    }
+}
+
+@media (min-width: 1200px) {
+    input {
+        padding: 12px;
+        font-size: 18px;
+    }
+
+    .autocomplete-items div {
+        padding: 11px;
+        font-size: 18px;
+    }
+
+    .word-occurrence-button {
+        font-size: 18px;
+        padding: 10px;
+    }
+
+    #luhzeSprichtForm {
+        flex-basis: 80%;
+    }
+
+}
+
+@media (min-width: 1600px) {
+    input {
+        padding: 12px;
+        font-size: 20px;
+    }
+
+    .autocomplete-items div {
+        padding: 11px;
+        font-size: 20px;
+    }
+
+    .word-occurrence-button {
+        font-size: 20px;
+        padding: 10px;
+    }
+
+    #luhzeSprichtForm {
+        flex-basis: 80%;
+    }
+
+}
+
+@media (min-width: 2000px) {
+    input {
+        padding: 14px;
+        font-size: 21px;
+    }
+
+    .autocomplete-items div {
+        padding: 13px;
+        font-size: 21px;
+    }
+
+    .word-occurrence-button {
+        font-size: 21px;
+        padding: 10px;
+    }
+
+    #luhzeSprichtForm {
+        flex-basis: 80%;
+    }
+}

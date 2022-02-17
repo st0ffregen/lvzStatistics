@@ -37,4 +37,4 @@ def test():
             }
         }
     })
-    return data['aggregations']['article_count_over_time']
+    return json.dumps(data['aggregations']['article_count_over_time']['buckets'])

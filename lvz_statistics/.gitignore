@@ -1,2 +1,3 @@
 elastic/data/*
 flaskapi/flaskapi/logs/*.log*
+nginx/logs/*.log*

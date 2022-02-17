@@ -1,0 +1,41 @@
+worker_processes auto;
+user www-data;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+
+    log_format custom_cache_log '[$time_local] [Cache:$upstream_cache_status] [$host] [Remote_Addr: $remote_addr] - $remote_user - $server_name to: $upstream_addr: "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" ' ;
+    access_log  /var/log/nginx/access.log custom_cache_log ;
+
+    proxy_cache_path /etc/nginx/cache levels=1:2 keys_zone=api_cache:10m inactive=12h max_size=1g use_temp_path=off;
+    include /etc/nginx/mime.types;
+    server_tokens off;
+
+    server {
+        listen 80;
+        server_name localhost 127.0.0.1;
+        root /usr/share/nginx/html;
+
+        location /lvz_statistics/api/ {
+			proxy_pass http://flaskapi:5000/api/;
+			proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+			proxy_set_header Host $http_host;
+			proxy_redirect off;
+            proxy_cache_revalidate on;
+            proxy_cache api_cache;
+            proxy_cache_valid 200 1m;
+            proxy_cache_use_stale error timeout invalid_header updating http_500 http_502 http_503 http_504;
+            proxy_cache_background_update on;
+		}
+
+		location ~* \.(images|javascript|js|css|flash|media|static)/  {
+            expires 10d;
+            add_header Cache-Control public;
+            add_header Pragma public;
+        }
+    }
+}
