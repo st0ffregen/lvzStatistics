@@ -8,6 +8,7 @@ services:
       - discovery.type=single-node
       - cluster.name=ws-es-data-cluster
       - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
       # - xpack.security.enabled='false'
       # - xpack.monitoring.enabled='false'
