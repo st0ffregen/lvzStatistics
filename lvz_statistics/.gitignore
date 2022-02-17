@@ -1,1 +1,2 @@
 elastic/data/*
+flaskapi/flaskapi/logs/*.log*
