@@ -56,17 +56,18 @@ def loadArticles(limit, offset):
     articles = []
     for row in entries:
         try:
-            article = Article(row[1], row[2], row[3], literal_eval_check_none(row[4]), literal_eval_check_none(row[5]), row[6], literal_eval_check_none(row[7]), row[8], row[9], row[10], row[11], row[12])
+            article = Article(row[1], row[2], row[3], literal_eval_check_none(row[4]), literal_eval_check_none(row[5]),
+                              row[6], literal_eval_check_none(row[7]), row[8], row[9], row[10], row[11], row[12])
         except (ValueError, TypeError) as e:
             print(row[4])
             print(row[5])
             print(row[7])
             raise e
-        except SyntaxError: # TODO: entfernen, wnen retrieveData nochmal gelaufen wurde
+        except SyntaxError:  # TODO: entfernen, wnen retrieveData nochmal gelaufen wurde
             continue
         articles.append({
             '_index': 'lvz_articles',
-            #'_type': 'article',
+            # '_type': 'article',
             '_id': row[0],
             'doc': article.__dict__
         })
@@ -74,22 +75,22 @@ def loadArticles(limit, offset):
     return articles
 
 
-
-def move_data_to_elastic():
-    es_client = Elasticsearch('http://localhost:9200')
+def create_index(es_client):
     es_client.indices.delete(index='lvz_articles', ignore=404)
     es_client.indices.create(index='lvz_articles', ignore=400)
 
-    for i in range(0, 30):
+
+def move_data_to_elastic():
+    es_client = Elasticsearch('http://localhost:9200')
+    create_index(es_client)
+
+    for i in range(0, 10):
         offset = i * 1000
         limit = 1000
 
         articles = loadArticles(limit, offset)
-        print(helpers.bulk(es_client, articles))
-        print(str(i) + '/30')
-
-
-
+        helpers.bulk(es_client, articles)
+        print(str(i+1) + '/10')
 
 
 def main():

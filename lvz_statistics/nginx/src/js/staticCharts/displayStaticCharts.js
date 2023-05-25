@@ -28,12 +28,18 @@ async function displayDate() {
 }
 
 async function displayArticlesTimeline(date, chartFontSize) {
-    let fetchedData = await fetchApi('test');
-    console.log(fetchedData)
-    if (fetchedData.includes('error')) return;
+    let fetched_data_not_lvz_articles = await fetchApi('test');
+    let fetched_data_lvz_articles = await fetchApi('lvz_articles');
+
+    if (fetched_data_not_lvz_articles.includes('error') || fetched_data_lvz_articles.includes('error')) return;
 
     let articlesTimelineChart = document.getElementById('articlesTimelineChart');
-    let chartData = convertFinancialData(fetchedData, 'Anzahl Artikel');
+    let chart_data_lvz_articles = convertFinancialData(fetched_data_lvz_articles, 'Anzahl Artikel LVZ');
+    let chart_data_not_lvz_articles = convertFinancialData(fetched_data_not_lvz_articles, 'Anzahl Artikel LVZ');
+
+
+    displayRessortArticlesTimelineChart(colorArray, fetchedData, firstRessortToBeDisplayed, secondRessortToBeDisplayed, chartFontSize);
+
     financialChart(articlesTimelineChart, chartData, 'MMM yyyy', chartFontSize);
 }
 

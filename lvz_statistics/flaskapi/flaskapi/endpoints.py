@@ -38,3 +38,34 @@ def test():
         }
     })
     return json.dumps(data['aggregations']['article_count_over_time']['buckets'])
+
+
+@app.route('/api/lvz_articles', methods=['GET'])
+def lvz_articles():
+    es_client = Elasticsearch('http://elasticsearch:9200')
+    data = es_client.search(index='lvz_articles', body={
+        "query": {
+            "bool": {
+                "must": {
+                    "match_phrase": {
+                        "doc.organization": "lvz"
+                    }
+                }
+            }
+        },
+        "size": 0,
+        "aggs": {
+            "article_count_over_time": {
+                "date_histogram": {
+                    "field": "doc.published_at",
+                    "calendar_interval": "month",
+                    "extended_bounds": {
+                        "min": "2020-01-01T00:00:00",
+                        "max": "2021-12-01T00:00:00"
+                    },
+                    "min_doc_count": 0
+                }
+            }
+        }
+    })
+    return json.dumps(data['aggregations']['article_count_over_time']['buckets'])
