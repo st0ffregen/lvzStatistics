@@ -6,9 +6,13 @@ import time
 import logging
 import traceback
 from datetime import datetime
+import spacy
+import regex
+
+nlp = spacy.load('de_core_news_sm')
 
 redaktionsAuthorList = ['Redaktion.', 'red.']
-punctuationBlocklist = ['»', '-', '“', '“']
+punctuation_blocklist = ['»', '-', '“', '“', '*']
 success = 0
 failed = 0
 notLVZ = 0
@@ -91,7 +95,7 @@ def getData(json, key):
 def removeUnwantedPunctuation(string):
     string = string.strip()
 
-    for punctuation in punctuationBlocklist:
+    for punctuation in punctuation_blocklist:
         if string[:-1] == punctuation:
             string = string[1:]
         if string[-1:] == punctuation:
@@ -100,23 +104,123 @@ def removeUnwantedPunctuation(string):
     return string.strip()
 
 
+def getAuthorString(article_text):
+    article_text = removeUnwantedPunctuation(article_text[-80:])
 
-def getAuthorString(articleBody, secure=False):
+    # Case 5: Editorial abbreviation
+    match = regex.search(r'\.\s+(Redaktion|red)\.', article_text, flags=re.UNICODE)
+    if match:
+        return ["lvz"], [True]
+
+    # Case 3.1: Single abbreviation with "Von" prefix, separated by a period
+    match = regex.search(r'Von\s+([A-Z]\.\s?[A-Z]\.)$', article_text, flags=re.UNICODE)
+    if match:
+        return [match.group(1).replace(' ', '')], [True]
+
+    # Case 4.1: Multiple abbreviations with "Von" prefix, separated by a slash
+    match = regex.search(r'Von (?=.*\/)((?:[\w.]{2,6}\/){0,3}[\w.]{2,6})$', article_text, flags=re.UNICODE)
+    if match:
+        names = re.split(r'\s*/\s*', match.group(1))
+
+        # check with spacy that names are not persons
+        for name in names:
+            if nlp(name)[0].ent_type_ == 'PER':
+                return None, None
+
+        return names, [True] * len(names)
+
+    # Case 6.: No author given, texts ends with a period
+    match = regex.search(r'\.$', article_text)
+    if match:
+        return ["lvz"], [True]
+
+    # Case 3.2: Single abbreviation without "Von" prefix
+    match = regex.search(r'\.\s+([a-z]+)$', article_text, flags=re.UNICODE)
+    if match:
+        return [match.group(1)], [True]
+
+
+    # Case 2.1: Multiple full names with "Von" prefix
+    match = regex.search(r'Von\s+([\p{L}\s-]+)\s+und\s+([\p{L}\s-]+)$', article_text, flags=re.UNICODE)
+    if match:
+        return [match.group(1), match.group(2)], [False, False]
+
+    # Case 2.5: Multiple full names with "Von" prefix, separated by commas and "und"
+    match = regex.search(r'Von\s+([\p{L}\s-,]+)\s+und\s+([\p{L}\s-]+)$', article_text, flags=re.UNICODE)
+    if match:
+        names = re.split(r'\s*,\s*', match.group(1))
+        names.append(match.group(2))
+        return names, [False] * len(names)
+
+    # Case 2.6: Multiple full names with "Von" prefix, separated by commas
+    match = regex.search(r'Von\s+([\p{L}\s-,]+)$', article_text, flags=re.UNICODE)
+    if match:
+        names = re.split(r'\s*,\s*', match.group(1))
+
+        return names, [False] * len(names)
+
+    # Case 2.4: Multiple full names with "Von" prefix, separated by a slash
+    match = regex.search(r'Von\s+([\p{L}\s-/]+)$', article_text, flags=re.UNICODE)
+    if match:
+        names = re.split(r'\s*/\s*', match.group(1))
+        # check with spacy that names are persons
+        for name in names:
+            if nlp(name)[0].ent_type_ != 'PER':
+                return None, None
+        return names, [False] * len(names)
+
+    # Case 2.2: Multiple full names without "Von" prefix, separated by a period
+    match = regex.search(r'\.\s+([\p{L}\s-]+)\s+und\s+([\p{L}\s-]+)$', article_text, flags=re.UNICODE)
+    if match:
+        return [match.group(1), match.group(2)], [False, False]
+
+    # Case 2.3: Multiple full names without "Von" prefix, missing period
+    match = regex.search(r'([\p{L}\s-]+)\s+und\s+([\p{L}\s-]+)$', article_text, flags=re.UNICODE)
+    if match:
+        names = []
+        for group in match.groups():
+            doc = nlp(group)
+
+            for ent in doc.ents:
+                if ent.label_ == 'PER':
+                    names.append(ent.text)
+
+        if names:
+            return names, [False] * len(names)
+
+    # Case 1.1: Single full name with "Von" prefix
+    match = regex.search(r'Von\s+([\p{L}\s-]+)$', article_text, flags=re.UNICODE)
+    if match:
+        return [match.group(1)], [False]
+
+    # Case 1.2: Single full name without "Von" prefix, separated by a period
+    match = regex.search(r'\.\s+([\p{L}\s-]+)$', article_text, flags=re.UNICODE)
+    if match:
+        return [match.group(1)], [False]
+
+    # Case 1.3: Single full name without "Von" prefix, missing period
+    # in this case check if the last words are a name
+    # include up to two name parts given that no middle names exists
+    last_words = ' '.join(article_text.split()[-4:])
+    doc = nlp(last_words)
+
+    for ent in doc.ents:
+        if ent.label_ == 'PER':
+            return [ent.text], [False]
+
+
+    return None, None
+
+def getAuthorStringOld(articleBody):
     lastCharacters = articleBody[-80:]
 
     for redaktionAbbrevation in redaktionsAuthorList:
         if lastCharacters.endswith(redaktionAbbrevation):
             return ['lvz'], False
 
-    if secure: # only recognize authors after schema: "Von autorName"
-        if 'Von' not in lastCharacters:
-            # raise AuthorError(f'No \'Von\' in last characters for {url}')
-            return None, None
+    if 'Von ' in lastCharacters:
+        authorParts = get_author_after_von(lastCharacters)
 
-        partAfterVon = lastCharacters.split('Von')[-1:][0]
-        authorParts = partAfterVon.split(' ')
-    else:
-        authorParts = lastCharacters.split(' ')
 
     authorName = ''
 
@@ -166,6 +270,12 @@ def getAuthorString(articleBody, secure=False):
             author_is_abbreviation_array.append(False)
 
     return authorArray, author_is_abbreviation_array
+
+
+def get_author_after_von(lastCharacters):
+    partAfterVon = lastCharacters.split('Von ')[-1:][0]
+    authorParts = partAfterVon.split(' ')
+    return authorParts
 
 
 def save_to_database(articles, logger):
@@ -221,10 +331,15 @@ def aggregateData(article, logger):
         text = getData(jsonContent, 'articleBody')
         isFree = getData(jsonContent, 'isAccessibleForFree')
         if text is not None and organization == 'lvz':
-            authorArray, author_is_abbreviation_array = getAuthorString(text, True)
+            authorArray, author_is_abbreviation_array = getAuthorString(text)
+            if authorArray is None:
+                print(getData(jsonContent, 'articleBody')[-80:])
+                print(authorArray)
+                print(author_is_abbreviation_array)
+                time.sleep(1)
         else:
             authorArray, author_is_abbreviation_array = None, None
-
+        return None
 
         article_object = Article(article['url'], article['contextTag'], organization, authorArray, author_is_abbreviation_array,
                                  genre, articleNamespace, datePublished, dateModified, isFree, headline, text)
@@ -260,7 +375,7 @@ def main():
         for article in articles:
             articles_for_db.append(aggregateData(article, logger))
 
-        save_to_database(articles_for_db, logger)
+        #save_to_database(articles_for_db, logger)
 
 
     print('success: ' + str(success))
