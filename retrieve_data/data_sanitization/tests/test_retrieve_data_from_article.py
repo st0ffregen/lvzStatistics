@@ -115,7 +115,7 @@ class TestBot(unittest.TestCase):
                 'Some text. Von Kay Würker, Jens Rosenkranz, Thomas Haegeler, Ellen Paul, Dana Weber')
         )
 
-    def test_get_author_string_single_abbreviation_with_von(self):
+    def test_get_author_string_single_abbreviation_with_von_and_period(self):
         # Case 3.1
         # Single abbreviation with "Von" prefix, separated by a period
         self.assertEqual(
@@ -148,9 +148,30 @@ class TestBot(unittest.TestCase):
             retrieveDataFromArticle.getAuthorString('Some text. ast')
         )
 
-    def test_get_author_string_multiple_abbreviations_with_von_slash(self):
-        # Case 4.1
-        # Multiple abbreviations with "Von" prefix, separated by a slash
+    def test_get_author_string_single_abbreviation_with_von(self):
+        # Case 3.3
+        # Single abbreviation without "Von" prefix
+        self.assertEqual(
+            (
+                ['ast'],
+                [True]
+            ),
+            retrieveDataFromArticle.getAuthorString('Some text. Von ast')
+        )
+
+    def test_fail_get_author_string_single_abbreviation_with_von_because_abbreviation_too_long(self):
+        # Case 3.3/3.2
+        # Single abbreviation without "Von" prefix
+        self.assertEqual(
+            (
+                None, None
+            ),
+            retrieveDataFromArticle.getAuthorString('Some text. Von toooooLong')
+        )
+
+    def test_get_author_string_mix_of_abbreviations_and_full_names_with_von_slash(self):
+        # Case 4.1/7
+        # Mix of abbreviations and full names, separated by a slash and "Von " prefix
         self.assertEqual(
             (
                 ['LVZ', 'lg'],
@@ -171,6 +192,27 @@ class TestBot(unittest.TestCase):
                 [True, True, True, True]
             ),
             retrieveDataFromArticle.getAuthorString('Some text. Von DAZ/T.S./abc/ABCD')
+        )
+        self.assertEqual(
+            (
+                ['Mark Daniel', 'ABCD'],
+                [False, True]
+            ),
+            retrieveDataFromArticle.getAuthorString('Some text. Von Mark Daniel/ABCD')
+        )
+        self.assertEqual(
+            (
+                ['ABCD', 'Mark Daniel'],
+                [True, False]
+            ),
+            retrieveDataFromArticle.getAuthorString('Some text. Von ABCD/Mark Daniel')
+        )
+        self.assertEqual(
+            (
+                ['ABCD', 'Mark Tim Daniel'],
+                [True, False]
+            ),
+            retrieveDataFromArticle.getAuthorString('Some text. Von ABCD/Mark Tim Daniel')
         )
 
     def test_fail_on_get_author_string_multiple_abbreviations_with_von_slash_because_abbreviation_to_long(self):
@@ -211,4 +253,15 @@ class TestBot(unittest.TestCase):
                 [True]
             ),
             retrieveDataFromArticle.getAuthorString('Some text.')
+        )
+
+    def test_get_author_with_dpa(self):
+        # Case 8
+        # with dpa
+        self.assertEqual(
+            (
+                ['dpa', 'mro'],
+                [True, True]
+            ),
+            retrieveDataFromArticle.getAuthorString('Some text. Von mro (mit dpa)')
         )
