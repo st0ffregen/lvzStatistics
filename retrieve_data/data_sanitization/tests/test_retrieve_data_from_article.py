@@ -14,7 +14,18 @@ class TestBot(unittest.TestCase):
             retrieveDataFromArticle.getAuthorString('some text. Von Mark Daniel')
         )
 
-    def test_get_author_string_single_full_name_with_von_and_author_has_dash(self):
+    def test_get_author_string_single_full_name_with_von_and_text_including_a_link(self):
+        # Case 1.1
+        # Single full name with "Von" prefix
+        self.assertEqual(
+            (
+                ['Mark Daniel'],
+                [False]
+            ),
+            retrieveDataFromArticle.getAuthorString('/a/link/ Von Mark Daniel')
+        )
+
+    def test_get_author_string_single_full_name_with_von_and_author_has_hyphen(self):
         # Case 1.1
         # Single full name with "Von" prefix
         self.assertEqual(
@@ -23,6 +34,17 @@ class TestBot(unittest.TestCase):
                 [False]
             ),
             retrieveDataFromArticle.getAuthorString('some text. Von Manuela Engelmann-Bunk')
+        )
+
+    def test_get_author_string_single_full_name_with_von_and_author_has_dot(self):
+        # Case 1.1
+        # Single full name with "Von" prefix
+        self.assertEqual(
+            (
+                ['Manuela E. Bunk'],
+                [False]
+            ),
+            retrieveDataFromArticle.getAuthorString('some text. Von Manuela E. Bunk')
         )
 
     def test_get_author_string_single_full_name_without_von_with_period(self):
@@ -45,6 +67,17 @@ class TestBot(unittest.TestCase):
                 [False]
             ),
             retrieveDataFromArticle.getAuthorString('Some text Mark Daniel')
+        )
+
+    def test_get_author_string_single_full_name_with_von_and_text_keyword(self):
+        # Case 1.4
+        # Single full name with "Von" prefix
+        self.assertEqual(
+            (
+                ['Denise Peikert'],
+                [False]
+            ),
+            retrieveDataFromArticle.getAuthorString('some text. Von Denise Peikert (Text) und André Kempner (Fotos)')
         )
 
     def test_get_author_string_multiple_full_names_with_von(self):
@@ -150,7 +183,7 @@ class TestBot(unittest.TestCase):
 
     def test_get_author_string_single_abbreviation_with_von(self):
         # Case 3.3
-        # Single abbreviation without "Von" prefix
+        # Single abbreviation written together with "Von" prefix
         self.assertEqual(
             (
                 ['ast'],
@@ -215,6 +248,17 @@ class TestBot(unittest.TestCase):
             retrieveDataFromArticle.getAuthorString('Some text. Von ABCD/Mark Tim Daniel')
         )
 
+    def test_get_author_string_mix_of_abbreviations_and_full_names_with_von_comma(self):
+        # Case 4.2
+        # Mix of abbreviations and full names, separated by a comma and "Von " prefix
+        self.assertEqual(
+            (
+                ['LVZ', 'lg'],
+                [True, True]
+            ),
+            retrieveDataFromArticle.getAuthorString('Some text. Von LVZ, lg')
+        )
+
     def test_fail_on_get_author_string_multiple_abbreviations_with_von_slash_because_abbreviation_to_long(self):
         # Case 4.1
         # Multiple abbreviations with "Von" prefix, separated by a slash
@@ -255,13 +299,24 @@ class TestBot(unittest.TestCase):
             retrieveDataFromArticle.getAuthorString('Some text.')
         )
 
-    def test_get_author_with_dpa(self):
+    def test_get_author_with_co_author_abbreviation(self):
         # Case 8
-        # with dpa
+        # with co-author
         self.assertEqual(
             (
                 ['dpa', 'mro'],
                 [True, True]
             ),
             retrieveDataFromArticle.getAuthorString('Some text. Von mro (mit dpa)')
+        )
+
+    def test_get_author_with_co_author_full_name(self):
+        # Case 8
+        # with co-author
+        self.assertEqual(
+            (
+                ['Theresa Moosmann', 'Mark Daniel'],
+                [False, False]
+            ),
+            retrieveDataFromArticle.getAuthorString('Some text. Von Mark Daniel (mit Theresa Moosmann)')
         )

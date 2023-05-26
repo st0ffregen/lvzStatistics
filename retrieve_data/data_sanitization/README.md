@@ -5,14 +5,13 @@
 * remove not unique urls
 * artikel vor 2010 loeschen, dann habe ich genau 12 Jahre LVZ
 * alle artikel in articles_with_basic_information ueberfuehren
+* bessere autoren recognition in articles_with_basic_information_improved_author_recognition
+  * success: 367705
+  * failed: 12
+  * notLVZ: 166612
+  * select count(*) from articles where organization = 'lvz' and author_array is Null --> 11194
 
 # To be done
-* retrieveData nochmal laufen lassen, manchmal wurde "red." etc. statt array als author geschrieben
-* autor:innen von aelteren Artikel nachtragen, durch abgleichen vorhandener autor:innen in neueren artikeln
-* alle artikel nochmal runterladen um autor anhand von kursiv geschriebenen text zu filtern
-    * autor erstmal anhand von securen schema "Von abc" herausfinden um Menge zu verkleinern
-    * mit dem kursiv schema koennen keine lvz plus artikel erkannt werden, muss manuell gemacht werden (oder account anlegen)!
-    * damit warten, falls ich nochmal was runterladen muss
 * verknuepfung autoren zu autorenkuerzeln
 
 # other
@@ -31,3 +30,12 @@
 * teilmenge1 + teilmenge2 = failed
 * Sucessrate fuer -5.db ca. 96%
 * Sucessrate fuer -1.db ca. 2,5%
+
+# evtl. noch machen
+* autor:innen von aelteren Artikel nachtragen, durch abgleichen vorhandener autor:innen in neueren artikeln
+* alle artikel nochmal runterladen um autor anhand von kursiv geschriebenen text zu filtern
+    * autor erstmal anhand von securen schema "Von abc" herausfinden um Menge zu verkleinern
+    * mit dem kursiv schema koennen keine lvz plus artikel erkannt werden, muss manuell gemacht werden (oder account anlegen)!
+    * damit warten, falls ich nochmal was runterladen muss
+    * schwierig, weil lvz alles vor 2015 gelöscht hat (Update vom 27.05.23)
+         * und es vor allem eh um die alten artikel geht
