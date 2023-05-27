@@ -115,6 +115,7 @@ def remove_inner_unwanted_punctuation(string):
 
 def getAuthorString(article_text):
     # this is a capture group for a name ([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]*)
+    # TODO: if the name contains a period there should be only one character and a space before as well as a space after the period
     # it can contain up to three words, separated by a space, including unicode characters, hyphens (e.g. "Elke Hans-Peter") and dots (e.g. "Hermann M. Schröder")
     article_text = remove_outer_unwanted_punctuation(article_text[-100:])
     article_text = remove_inner_unwanted_punctuation(article_text)
@@ -122,6 +123,7 @@ def getAuthorString(article_text):
     is_abbreviations = []
 
     # Case 5: Editorial abbreviation
+    # TODO: red gibt es auch ohne period am Ende
     match = regex.search(r'\.\s+(Redaktion|red)\.', article_text, flags=re.UNICODE)
     if match:
         return ["LVZ"], [True]

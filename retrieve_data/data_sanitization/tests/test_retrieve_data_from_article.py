@@ -1,7 +1,7 @@
 import unittest
 from ..scripts import retrieveDataFromArticle
 
-class TestBot(unittest.TestCase):
+class TestRetrieveDateFromArticle(unittest.TestCase):
     # cases are listed in the wiki: https://github.com/st0ffregen/lvzStatistics/wiki/Author-Recognition
     def test_get_author_string_single_full_name_with_von(self):
         # Case 1.1

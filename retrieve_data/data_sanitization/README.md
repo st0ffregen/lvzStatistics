@@ -13,6 +13,14 @@
 
 # To be done
 * verknuepfung autoren zu autorenkuerzeln
+  * fuzzy matching (idee noch nciht ausgereif)
+  * direktes matching ueber anfangsbuchstaben des vornamens und des nachnamens vergleichen mit kürzel
+  * bei beidem statitische sigifikanz maß, wenn es mehr als ein match gibt
+  * könnte noch ressortzugehörigkeit einbeziehen
+  * könnte into account taken dass wenn es schon ein matching gibt und das zeitlich nahe ist, die chance erhöt, dass die abbr wieder auf den schon gefundenen namen matched
+  * auch beachten, dass keine zwei autoren auf die selbe abbr mappen können wenn zeitlich nah beieinander (und bei autor:innen threshold an geschrieben artikel reached haben)
+    * könnte aber auch sein, dass die lvz einfach nur die abbr geändert hat
+  * am ende alle abbr und ihr match collecten und dann nochmal gewichten (wenn abbr mehrfach vorkommt, dann wohl wichtiger als eine, die nur einmal vorkommt, aber eine höhere certainty hat)
 
 # other
 * analyzeDataAndMoveToElastic.log can probably be removed
