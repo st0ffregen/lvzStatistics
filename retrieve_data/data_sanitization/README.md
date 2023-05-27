@@ -21,6 +21,10 @@
   * auch beachten, dass keine zwei autoren auf die selbe abbr mappen können wenn zeitlich nah beieinander (und bei autor:innen threshold an geschrieben artikel reached haben)
     * könnte aber auch sein, dass die lvz einfach nur die abbr geändert hat
   * am ende alle abbr und ihr match collecten und dann nochmal gewichten (wenn abbr mehrfach vorkommt, dann wohl wichtiger als eine, die nur einmal vorkommt, aber eine höhere certainty hat)
+  * sql: erstmal alle abbr zu full names mapping in die tabelle, dabei schon articles zu den abbrs connecten
+    * dann articles tabelle das unique bei row rausnehmen (evtl. unique row + author_id) um verschiedene autoren pro artikel zuzulassen
+    * verknuepfung artikel-autor muss wohl ueber n:m tabelle realisiert werden, weil ich wahrscheinlich erstmal meherer einträge pro autor in autor tabelle habe durch doppelte abbrs
+      * ein artikel mit nem full name soll dann auf all diese rows mappen (artikel mit abbrs können 1:m mappen)
 
 # other
 * analyzeDataAndMoveToElastic.log can probably be removed
