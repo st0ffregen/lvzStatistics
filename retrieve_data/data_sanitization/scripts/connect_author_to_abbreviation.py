@@ -3,6 +3,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import tqdm
 import re
+import sys
 
 # this scripts tries to connect the author to their abbreviation
 # from an abbreviation it attempts to find an author name similar to the abbreviation in a predefined time window
@@ -12,15 +13,16 @@ import re
 # in both cases we accept the match if it is unique
 # the script then adds the author and abbreviation to the author table
 
-organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn']
+organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline']
 
 def main():
     con = sqlite3.connect('../data/articles_with_basic_information_improved_author_recognition.db')
     cur = con.cursor()
     months = 6
     batch_size = 100
-    article_count = 201094 # select count(*) + 1 from articles where organization = 'lvz'
-    all_abbreviation_to_author_mapping = []
+    write_to_database_batch = 100
+    article_count = cur.execute('select count(*) from articles where organization = "lvz"').fetchone()[0] + 1
+    #all_abbreviation_to_author_mapping = []
     current_abbreviation_to_author_mapping = []
 
     oldest_article = get_oldest_article(cur)
@@ -29,25 +31,35 @@ def main():
     focused_article = oldest_article
 
     for i in tqdm.tqdm(range(article_count)):
+        #print(f'\r distance to oldest article: {focused_article["id"]- window_articles[-1]["id"]}', end='')
+        #print(f'\r distance to newest article: {focused_article["id"] - window_articles[0]["id"]}', end='')
+        #print(f'\r{window_articles[0]["id"]} -- {focused_article["id"]} -- {window_articles[-1]["id"]}', end='')
         window_articles_authors_with_frequency = get_authors_with_frequency(window_articles)
 
         matches = search_for_full_name(focused_article, window_articles_authors_with_frequency)
         # check for each element in matches if the combination of author and abbreviation is not already in current_abbreviation_to_author_mapping
-        matches = [match for match in matches if not any(abbreviation_to_author['author'] == match['author'] and abbreviation_to_author['abbreviation'] == match['abbreviation'] for abbreviation_to_author in all_abbreviation_to_author_mapping)]
-        all_abbreviation_to_author_mapping.extend(matches)
+        #matches = [match for match in matches if not any(abbreviation_to_author['author'] == match['author'] and abbreviation_to_author['abbreviation'] == match['abbreviation'] for abbreviation_to_author in all_abbreviation_to_author_mapping)]
+        #all_abbreviation_to_author_mapping.extend(matches)
+        # add focused_article id to every element in matches dict
+        for match in matches:
+            match['article_id'] = focused_article['id']
         current_abbreviation_to_author_mapping.extend(matches)
 
         focused_article = get_succeeding_focused_article(window_articles, focused_article)
         if focused_article is None:
             break
 
-        window_articles = get_article_window(cur, focused_article, months=months)
-
         if i > 0 and i % batch_size == 0:
+            window_articles = get_article_window(cur, focused_article, months=months)
+
+        if i > 0 and i % write_to_database_batch == 0:
             for abbreviation_to_author in current_abbreviation_to_author_mapping:
                 updated_at = datetime.utcnow().isoformat()
                 cur.execute('insert into authors values (?,?,?,?,?,?)',
                             (None, abbreviation_to_author['author'], abbreviation_to_author['abbreviation'], round(abbreviation_to_author['certainty'], 3), updated_at, updated_at))
+                cur.execute('insert into article_authors values (?,?,?,?,?)',
+                            (None, abbreviation_to_author['article_id'], cur.lastrowid, updated_at, updated_at))
+
             con.commit()
             current_abbreviation_to_author_mapping = []
 
@@ -63,7 +75,7 @@ def get_authors_with_frequency(window_articles):
         authors = []
         for idx, author in enumerate(eval(article['author_array'])):
             if eval(article['author_is_abbreviation'])[idx] is False:
-                authors.append(author.lower())
+                authors.append(author.lower().strip())
 
         for author in authors:
             if author not in window_articles_authors_with_frequency.keys():
@@ -74,6 +86,7 @@ def get_authors_with_frequency(window_articles):
 
 
 def search_for_full_name(focused_article, all_authors_with_frequency: dict):
+    focused_article = focused_article.copy()
     direct_matches = []
 
     if focused_article['author_is_abbreviation'] is None:
@@ -85,16 +98,19 @@ def search_for_full_name(focused_article, all_authors_with_frequency: dict):
     if any([author.lower() in organizations for author in eval(focused_article['author_array'])]):
         author_array = eval(focused_article['author_array'])
         remaining_authors = []
+        remaining_author_is_abbreviation = []
         for author in author_array:
             if author.lower() in organizations:
                 direct_matches.append({'abbreviation': author, 'author': author, 'certainty': 1})
             else:
                 remaining_authors.append(author)
+                remaining_author_is_abbreviation.append(focused_article['author_is_abbreviation'][author_array.index(author)])
 
         if len(remaining_authors) == 0:
             return direct_matches
         else:
             focused_article['author_array'] = str(remaining_authors)
+            focused_article['author_is_abbreviation'] = str(remaining_author_is_abbreviation)
 
 
     article_author_abbreviations = []
@@ -128,7 +144,7 @@ def search_for_full_name(focused_article, all_authors_with_frequency: dict):
                     matches[0]['certainty'] = 0.9
                 else:
                     for idx, match in enumerate(matches):
-                        matches[idx]['certainty'] += 0.1
+                        matches[idx]['certainty'] = 0.1
             else:
                 # update certainty based on normalized frequency
                 for idx, match in enumerate(matches):
@@ -239,18 +255,18 @@ def get_article_window(cur, focused_article, months=6):
     upper_date_limit = (article_date + relativedelta(months=months)).isoformat()
 
     cur.execute(
-        'select url, author_array, author_is_abbreviation, published_at from articles where organization == "lvz" and published_at >= "' + lower_date_limit + '" and published_at <= "' + upper_date_limit + '" order by published_at asc')
+        'select id, url, author_array, author_is_abbreviation, published_at from articles where organization == "lvz" and published_at >= "' + lower_date_limit + '" and published_at <= "' + upper_date_limit + '" order by published_at asc')
     fetched_articles = cur.fetchall()
-    article_window = [{'url': article[0], 'author_array': article[1], 'author_is_abbreviation': article[2], 'published_at': article[3]} for article in fetched_articles]
+    article_window = [{'id': article[0], 'url': article[1], 'author_array': article[2], 'author_is_abbreviation': article[3], 'published_at': article[4]} for article in fetched_articles]
     return article_window
 
 
 def get_oldest_article(cur):
     cur.execute(
-        'select url, author_array, author_is_abbreviation, published_at from articles where organization == "lvz" and author_is_abbreviation is not null and author_is_abbreviation like "%True%" order by published_at asc limit 1')
+        'select id, url, author_array, author_is_abbreviation, published_at from articles where organization == "lvz" and author_is_abbreviation is not null and author_is_abbreviation like "%True%" order by published_at asc limit 1')
     next_fetched_article = cur.fetchone()
-    next_article = {'url': next_fetched_article[0], 'author_array': next_fetched_article[1],
-                    'author_is_abbreviation': next_fetched_article[2], 'published_at': next_fetched_article[3]}
+    next_article = {'id': next_fetched_article[0], 'url': next_fetched_article[1], 'author_array': next_fetched_article[2],
+                    'author_is_abbreviation': next_fetched_article[3], 'published_at': next_fetched_article[4]}
     return next_article
 
 

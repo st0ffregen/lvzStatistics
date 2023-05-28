@@ -9,12 +9,16 @@ from datetime import datetime
 import spacy
 import regex
 import tqdm
+from retrieve_data.data_sanitization.utils.logger import Logger
 
 nlp = spacy.load('de_core_news_sm')
 
 redaktionsAuthorList = ['Redaktion.', 'red.']
-punctuation_blocklist = ['»', '-', '“', '“', '*', ' -']
-punctuation_blocklist_keep_whitespace = [' -']
+punctuation_blocklist = ['»', '-', '“', '*', '"']
+punctuation_blocklist_keep_whitespace = [' -', '  ']
+inner_punctuation_blocklist = [u'\xa0']
+organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline']
+
 success = 0
 failed = 0
 notLVZ = 0
@@ -52,19 +56,6 @@ class Article:
         self.text = text
 
 
-def configureLogger():
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-
-    formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
-
-    file_handler = logging.FileHandler('../logs/retrieveDataFromArticle.log')
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
-    return logger
-
-
 def loadDownloadedData(databaseName, limit, offset):
     con = sqlite3.connect(databaseName)
     cur = con.cursor()
@@ -98,9 +89,9 @@ def remove_outer_unwanted_punctuation(string):
     string = string.strip()
 
     for punctuation in punctuation_blocklist:
-        if string[:-1] == punctuation:
+        if string[0] == punctuation:
             string = string[1:]
-        if string[-1:] == punctuation:
+        if string[-1] == punctuation:
             string = string[:-1]
 
     return string.strip()
@@ -111,22 +102,34 @@ def remove_inner_unwanted_punctuation(string):
     for punctuation in punctuation_blocklist_keep_whitespace:
         string = string.replace(punctuation, ' ')
 
+    for punctuation in inner_punctuation_blocklist:
+        string = string.replace(punctuation, '')
+
     return string.strip()
 
 def getAuthorString(article_text):
-    # this is a capture group for a name ([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]*)
-    # TODO: if the name contains a period there should be only one character and a space before as well as a space after the period
-    # it can contain up to three words, separated by a space, including unicode characters, hyphens (e.g. "Elke Hans-Peter") and dots (e.g. "Hermann M. Schröder")
-    article_text = remove_outer_unwanted_punctuation(article_text[-100:])
+    article_text = article_text[-100:]
+    article_text = remove_obvious_noise(article_text)
+    article_text = remove_outer_unwanted_punctuation(article_text)
     article_text = remove_inner_unwanted_punctuation(article_text)
+
     authors = []
     is_abbreviations = []
 
+    # regex vars
+    # it can contain up to three words, separated by a space, including unicode characters, hyphens (e.g. "Elke Hans-Peter") and dots (e.g. "Hermann M. Schröder")
+    re_name = r'((?:[\p{L}]+|\p{L}\.)(?:\s|-)(?:[\p{L}]+|\p{L}\.)(?:\s|-)?(?:[\p{L}]*|\p{L}\.))'
+    #re_abbr = r'([\w\.?]+)(?:\s|\/|,)?'
+
     # Case 5: Editorial abbreviation
-    # TODO: red gibt es auch ohne period am Ende
-    match = regex.search(r'\.\s+(Redaktion|red)\.', article_text, flags=re.UNICODE)
+    match = regex.search(r'\.\s+(Redaktion|red)\.?$', article_text, flags=re.UNICODE)
     if match:
         return ["LVZ"], [True]
+
+    # Case 9: organization abbreviation
+    match = regex.search(rf'von\s({"|".join(organizations)})$', article_text.lower(), flags=re.UNICODE)
+    if match:
+        return [match.group(1)], [True]
 
     # Case 8: co-author
     match = regex.search(r'\((mit .*)\)$', article_text, flags=re.UNICODE)
@@ -142,9 +145,9 @@ def getAuthorString(article_text):
         article_text = article_text.strip()
 
     # Case 3.1: Single abbreviation with "Von" prefix, separated by a period
-    match = regex.search(r'Von\s+([A-Z]\.\s?[A-Z]\.)$', article_text, flags=re.UNICODE)
+    match = regex.search(r'Von\s+(\w\.\s?\w\.)$', article_text, flags=re.UNICODE)
     if match:
-        authors.append(match.group(1).replace(' ', ''))
+        authors.append(match.group(1).replace(' ', '').replace('.', ''))
         is_abbreviations.append(True)
         return authors, is_abbreviations
 
@@ -155,13 +158,14 @@ def getAuthorString(article_text):
 
         # check with spacy if names are persons but only if white spaces are included
         for split in splits:
-            authors.append(split)
+            authors.append(remove_outer_unwanted_punctuation(split))
             if ' ' in split:
                 is_person = nlp(split)[0].ent_type_ == 'PER'
                 is_abbreviations.append(is_person is False)
             elif len(split) < 2 or len(split) > 6:
                 return None, None
             elif '.' in split: # similar to case 3.1
+                authors[-1] = authors[-1].replace('.', '')
                 is_abbreviations.append(True)
             elif split.isupper(): # very likely that it is an abbreviation
                 is_abbreviations.append(True)
@@ -180,14 +184,14 @@ def getAuthorString(article_text):
 
     # Case 3.2: Single abbreviation without "Von" prefix
     if 'Von ' not in article_text:
-        match = regex.search(r'\.\s+([\w]{2,6})$', article_text, flags=re.UNICODE)
+        match = regex.search(r'\.\s+(-?\w{2,6})$', article_text, flags=re.UNICODE)
         if match:
             authors.append(match.group(1))
             is_abbreviations.append(True)
             return authors, is_abbreviations
 
     # Case 3.3: Single abbreviation written together with "Von" prefix
-    match = regex.search(r'Von\s+([\w]{2,6})$', article_text, flags=re.UNICODE)
+    match = regex.search(r'Von\s+(-?\w{2,6})$', article_text, flags=re.UNICODE)
     if match:
         authors.append(match.group(1))
         is_abbreviations.append(True)
@@ -195,7 +199,7 @@ def getAuthorString(article_text):
 
 
     # Case 2.1: Multiple full names with "Von" prefix
-    match = regex.search(r'Von\s+([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]*)\s+und\s+([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]*)$', article_text, flags=re.UNICODE)
+    match = regex.search(rf'Von\s+{re_name}\s+und\s+{re_name}$', article_text, flags=re.UNICODE)
     if match:
         authors.extend([match.group(1), match.group(2)])
         is_abbreviations.extend([False, False])
@@ -203,17 +207,16 @@ def getAuthorString(article_text):
 
     # Case 2.5: Multiple full names with "Von" prefix, separated by commas and "und"
     if 'Von' in article_text and ',' in article_text.split('Von ')[1] and 'und' in article_text.split('Von ')[1]: # check if there is a comma and an "und" after "Von"
-        match = regex.search(r'Von\s+(([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]?,?\s?)+\s+und\s+([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]?)+)$', article_text, flags=re.UNICODE)
+        match = regex.search(rf'Von\s+({re_name},?\s?)+\s+und\s+{re_name}$', article_text, flags=re.UNICODE)
         if match:
-            names = re.split(r'\s*,\s*', match.group(1))
-            names = names[:-1] + names[-1].split(' und ')
+            names = re.split(', | und ', match.captures()[0].replace('Von ', ''))
             authors.extend(names)
             is_abbreviations.extend([False] * len(names))
             return authors, is_abbreviations
 
     # Case 2.6: Multiple full names with "Von" prefix, separated by commas
-    if 'Von' in article_text and ',' in article_text.split('Von ')[1]: # check if there is a comma after "Von"
-        match = regex.search(r'Von\s+([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]?,?\s?)+$', article_text, flags=re.UNICODE)
+    if 'Von' in article_text and ',' in article_text.split('Von ')[1]: # check if there is at least one comma after "Von ..."
+        match = regex.search(rf'Von\s+(?:{re_name},?\s?)+$', article_text, flags=re.UNICODE)
         if match:
             names = re.split(r'\s*,\s*', match.captures()[0].replace('Von ', ''))
             authors.extend(names)
@@ -238,7 +241,7 @@ def getAuthorString(article_text):
 
     # Case 2.4: Multiple full names with "Von" prefix, separated each by a slash
     if 'Von' in article_text and '/' in article_text.split('Von ')[1]: # check if there is a slash after "Von"
-        match = regex.search(r'Von\s+([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]?/?\s?)+$', article_text, flags=re.UNICODE)
+        match = regex.search(rf'Von\s+(?:{re_name}/?\s?)+$', article_text, flags=re.UNICODE)
         if match:
             names = re.split(r'\s*/\s*', match.captures()[0].replace('Von ', ''))
             # check with spacy that names are persons
@@ -251,14 +254,25 @@ def getAuthorString(article_text):
             return authors, is_abbreviations
 
     # Case 2.2: Multiple full names without "Von" prefix, separated from text by a period
-    match = regex.search(r'\.\s+([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]*)\s+und\s+([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]*)$', article_text, flags=re.UNICODE)
+    match = regex.search(rf'\.\s+{re_name}\s+und\s+{re_name}$', article_text, flags=re.UNICODE)
     if match:
         authors.extend([match.group(1), match.group(2)])
         is_abbreviations.extend([False, False])
         return authors, is_abbreviations
 
+    # Case 4.3: Multiple abbreviations names without "Von" prefix, separated from text by a period
+    if '/' in article_text:
+        match = regex.search(r'\.\s+(-?\w{2,6}\/?)+$', article_text, flags=re.UNICODE)
+        if match:
+            capture = match.captures()[0]
+            capture = capture[1:].strip()
+            abbreviations = re.split(r'\s*/\s*', capture)
+            authors.extend(abbreviations)
+            is_abbreviations.extend([True] * len(abbreviations))
+            return authors, is_abbreviations
+
     # Case 2.3: Multiple full names without "Von" prefix, missing period
-    match = regex.search(r'([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]*)\s+und\s+([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]*)$', article_text, flags=re.UNICODE)
+    match = regex.search(rf'{re_name}\s+und\s+{re_name}$', article_text, flags=re.UNICODE)
     if match:
         names = []
         for group in match.groups():
@@ -273,42 +287,60 @@ def getAuthorString(article_text):
             is_abbreviations.extend([False] * len(names))
             return authors, is_abbreviations
 
-    # Case 1.1: Single full name with "Von" prefix
-    match = regex.search(r'Von\s+([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]*)$', article_text, flags=re.UNICODE)
-    if match:
-        authors.append(match.group(1))
-        is_abbreviations.append(False)
-        return authors, is_abbreviations
-
     # Case 1.4: Single full name with "Von" prefix, name followed by " (Text)"
     if 'Von ' in article_text and ' (Text)' in article_text:
-        match = regex.search(r'Von\s+([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]*)\s+\(Text\)', article_text, flags=re.UNICODE)
+        match = regex.search(rf'Von\s+{re_name}\s+\(Text\)', article_text, flags=re.UNICODE)
         if match:
             authors.append(match.group(1))
             is_abbreviations.append(False)
             return authors, is_abbreviations
 
-    # Case 1.2: Single full name without "Von" prefix, separated from the text by a period
-    match = regex.search(r'\.\s(?!Von\s)([-\p{L}\.]+\s+[-\p{L}\.]+\s?[-\p{L}\.]*)$', article_text, flags=re.UNICODE)
+    # Case 1.1: Single full name with "Von" prefix
+    match = regex.search(rf'Von\s+{re_name}$', article_text, flags=re.UNICODE)
     if match:
         authors.append(match.group(1))
         is_abbreviations.append(False)
         return authors, is_abbreviations
 
-    # Case 1.3: Single full name without "Von" prefix, missing period
+
+    # Case 1.2: Single full name without "Von" prefix, separated from the text by a period
+    match = regex.search(rf'\.\s(?!Von\s){re_name}$', article_text, flags=re.UNICODE)
+    if match:
+        authors.append(match.group(1))
+        is_abbreviations.append(False)
+        return authors, is_abbreviations
+
+    # General case name without "Von" prefix, missing period
     # in this case check if the last words are a name
     # include up to two name parts given that no middle names exists
-    last_words = ' '.join(article_text.split()[-4:])
-    doc = nlp(last_words)
-
-    for ent in doc.ents:
-        if ent.label_ == 'PER':
-            authors.append(ent.text)
+    last_elements = [' '.join(re.split(r' |/', article_text)[-4:-2]), ' '.join(re.split(r' |/', article_text)[-2:])]
+    for element in last_elements:
+        if element != '' and nlp(element)[0].ent_type_ == 'PER':
+            authors.append(element)
             is_abbreviations.append(False)
-            return authors, is_abbreviations
+    if authors:
+        return authors, is_abbreviations
 
     return None, None
 
+def remove_obvious_noise(string):
+    string = remove_email_addresses(string)
+    string = remove_hyper_links(string)
+    return string
+
+def remove_email_addresses(string):
+    # recognize hyperlinks
+    hyper_links = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', string)
+    for link in hyper_links:
+        string = string.replace(link, '')
+    return string.strip()
+
+def remove_hyper_links(string):
+    # recognize hyperlinks
+    hyper_links = re.findall(r'\b(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,}){1,}(?:\/[a-zA-Z0-9-]+)*(?:\.html)?', string)
+    for link in hyper_links:
+        string = string.replace(link, '')
+    return string.strip()
 
 def check_if_is_abbreviation(string):
     if ' ' in string:
@@ -396,7 +428,7 @@ def aggregateData(article, logger):
 
 
 def main():
-    logger = configureLogger()
+    logger = Logger('../logs/', 'retrieval', 'INFO').get_logger()
 
     for l in range(0, 53):
         offset = l * 7000

@@ -6,12 +6,13 @@
 * artikel vor 2010 loeschen, dann habe ich genau 12 Jahre LVZ
 * alle artikel in articles_with_basic_information ueberfuehren
 * bessere autoren recognition in articles_with_basic_information_improved_author_recognition
-  * success: 367705
-  * failed: 12
+  * success: 366501
+  * failed: 1216
   * notLVZ: 166612
-  * select count(*) from articles where organization = 'lvz' and author_array is Null --> 11194
+  * select count(*) from articles where organization = 'lvz' and author_array is Null --> 9282
 
 # To be done
+* seit letztem run ist failed um min. 1000 gestiegen. das untersuchen
 * verknuepfung autoren zu autorenkuerzeln
   * fuzzy matching (idee noch nciht ausgereif)
   * direktes matching ueber anfangsbuchstaben des vornamens und des nachnamens vergleichen mit kürzel
@@ -25,6 +26,7 @@
     * dann articles tabelle das unique bei row rausnehmen (evtl. unique row + author_id) um verschiedene autoren pro artikel zuzulassen
     * verknuepfung artikel-autor muss wohl ueber n:m tabelle realisiert werden, weil ich wahrscheinlich erstmal meherer einträge pro autor in autor tabelle habe durch doppelte abbrs
       * ein artikel mit nem full name soll dann auf all diese rows mappen (artikel mit abbrs können 1:m mappen)
+  * evtl. pro abbr die top 1-3 autoren nehmen und dann sodoku mäßig vergleichen
 
 # other
 * analyzeDataAndMoveToElastic.log can probably be removed
