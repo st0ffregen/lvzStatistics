@@ -16,36 +16,31 @@ import sys
 organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline']
 
 def main():
-    con = sqlite3.connect('../data/articles_with_basic_information_improved_author_recognition.db')
-    cur = con.cursor()
+    match_author_to_abbreviation()
+
+
+def match_author_to_abbreviation():
+    con, cur = get_db_connection()
     months = 6
-    batch_size = 100
+    batch_size = 100 # TODO: check again, if this could be a problem when abbreviated articles are sparse. plot graph displaying the number of articles with abbreviations over time
     write_to_database_batch = 100
-    article_count = cur.execute('select count(*) from articles where organization = "lvz"').fetchone()[0] + 1
-    #all_abbreviation_to_author_mapping = []
+    article_count = get_article_count(cur)
     current_abbreviation_to_author_mapping = []
 
     oldest_article = get_oldest_article(cur)
     window_articles = get_article_window(cur, oldest_article, months=months)
-
     focused_article = oldest_article
 
     for i in tqdm.tqdm(range(article_count)):
-        #print(f'\r distance to oldest article: {focused_article["id"]- window_articles[-1]["id"]}', end='')
-        #print(f'\r distance to newest article: {focused_article["id"] - window_articles[0]["id"]}', end='')
-        #print(f'\r{window_articles[0]["id"]} -- {focused_article["id"]} -- {window_articles[-1]["id"]}', end='')
         window_articles_authors_with_frequency = get_authors_with_frequency(window_articles)
 
         matches = search_for_full_name(focused_article, window_articles_authors_with_frequency)
-        # check for each element in matches if the combination of author and abbreviation is not already in current_abbreviation_to_author_mapping
-        #matches = [match for match in matches if not any(abbreviation_to_author['author'] == match['author'] and abbreviation_to_author['abbreviation'] == match['abbreviation'] for abbreviation_to_author in all_abbreviation_to_author_mapping)]
-        #all_abbreviation_to_author_mapping.extend(matches)
-        # add focused_article id to every element in matches dict
-        for match in matches:
-            match['article_id'] = focused_article['id']
+
+        add_article_id(focused_article, matches)
         current_abbreviation_to_author_mapping.extend(matches)
 
         focused_article = get_succeeding_focused_article(window_articles, focused_article)
+
         if focused_article is None:
             break
 
@@ -53,21 +48,40 @@ def main():
             window_articles = get_article_window(cur, focused_article, months=months)
 
         if i > 0 and i % write_to_database_batch == 0:
-            for abbreviation_to_author in current_abbreviation_to_author_mapping:
-                updated_at = datetime.utcnow().isoformat()
-                cur.execute('insert into authors values (?,?,?,?,?,?)',
-                            (None, abbreviation_to_author['author'], abbreviation_to_author['abbreviation'], round(abbreviation_to_author['certainty'], 3), updated_at, updated_at))
-                cur.execute('insert into article_authors values (?,?,?,?,?)',
-                            (None, abbreviation_to_author['article_id'], cur.lastrowid, updated_at, updated_at))
-
-            con.commit()
+            save_matches_to_db(con, cur, current_abbreviation_to_author_mapping)
             current_abbreviation_to_author_mapping = []
 
 
+def save_matches_to_db(con, cur, current_abbreviation_to_author_mapping):
+    for abbreviation_to_author in current_abbreviation_to_author_mapping:
+        updated_at = datetime.utcnow().isoformat()
+        cur.execute('insert into authors values (?,?,?,?,?,?)',
+                    (None, abbreviation_to_author['author'], abbreviation_to_author['abbreviation'],
+                     round(abbreviation_to_author['certainty'], 3), updated_at, updated_at))
+        cur.execute('insert into article_authors values (?,?,?,?,?)',
+                    (None, abbreviation_to_author['article_id'], cur.lastrowid, updated_at, updated_at))
+    con.commit()
+
+
+def add_article_id(focused_article, matches):
+    # add focused_article id to every element in matches dict
+    for match in matches:
+        match['article_id'] = focused_article['id']
+
+
+def get_article_count(cur):
+    article_count = cur.execute('select count(*) from articles where organization = "lvz"').fetchone()[0] + 1
+    return article_count
+
+
+def get_db_connection():
+    con = sqlite3.connect('../data/articles_with_author_mapping.db')
+    cur = con.cursor()
+    return con, cur
 
 
 def get_authors_with_frequency(window_articles):
-    window_articles_authors_with_frequency = {}
+    authors_with_frequency = {}
     for article in window_articles:
         if article['author_array'] is None:
             continue
@@ -78,33 +92,33 @@ def get_authors_with_frequency(window_articles):
                 authors.append(author.lower().strip())
 
         for author in authors:
-            if author not in window_articles_authors_with_frequency.keys():
-                window_articles_authors_with_frequency[author] = 1
+            if author not in authors_with_frequency.keys():
+                authors_with_frequency[author] = 1
             else:
-                window_articles_authors_with_frequency[author] += 1
-    return window_articles_authors_with_frequency
+                authors_with_frequency[author] += 1
+
+    return authors_with_frequency
+
+def at_least_one_author_is_abbreviated(focused_article):
+    return any(eval(focused_article['author_is_abbreviation']))
 
 
-def search_for_full_name(focused_article, all_authors_with_frequency: dict):
+def at_least_one_author_is_an_organization(focused_article):
+    return any([author.lower() in organizations for author in eval(focused_article['author_array'])])
+
+
+def search_for_full_name(focused_article, all_authors: dict):
     focused_article = focused_article.copy()
     direct_matches = []
 
     if focused_article['author_is_abbreviation'] is None:
         return None
 
-    if not any(eval(focused_article['author_is_abbreviation'])):
+    if at_least_one_author_is_abbreviated(focused_article) is False:
         return None
 
-    if any([author.lower() in organizations for author in eval(focused_article['author_array'])]):
-        author_array = eval(focused_article['author_array'])
-        remaining_authors = []
-        remaining_author_is_abbreviation = []
-        for author in author_array:
-            if author.lower() in organizations:
-                direct_matches.append({'abbreviation': author, 'author': author, 'certainty': 1})
-            else:
-                remaining_authors.append(author)
-                remaining_author_is_abbreviation.append(focused_article['author_is_abbreviation'][author_array.index(author)])
+    if at_least_one_author_is_an_organization(focused_article):
+        remaining_author_is_abbreviation, remaining_authors = add_organization_authors_to_matches(direct_matches, focused_article)
 
         if len(remaining_authors) == 0:
             return direct_matches
@@ -112,123 +126,185 @@ def search_for_full_name(focused_article, all_authors_with_frequency: dict):
             focused_article['author_array'] = str(remaining_authors)
             focused_article['author_is_abbreviation'] = str(remaining_author_is_abbreviation)
 
+    author_abbreviations = get_abbreviations(focused_article)
 
-    article_author_abbreviations = []
-    for idx, author in enumerate(eval(focused_article['author_array'])):
-        if eval(focused_article['author_is_abbreviation'])[idx]:
-            article_author_abbreviations.append(author.lower().replace('.', ''))
+    prepare_all_authors_dict(all_authors)
 
-    for author, frequency in all_authors_with_frequency.items():
-        author_abbreviation = ''.join([first_char[0] for first_char in author.split(' ')])
-        all_authors_with_frequency[author] = {'frequency': frequency, 'abbreviation': author_abbreviation}
+    find_direct_matches(all_authors, author_abbreviations, direct_matches)
+
+    if len(direct_matches) > 0:
+        return direct_matches
+
+    fuzzy_matches = find_fuzzy_matches(all_authors, author_abbreviations)
+
+    return fuzzy_matches
 
 
+def find_fuzzy_matches(all_authors, author_abbreviations):
+    # fuzzy matches follow the conditions:
+    # 1. all abbreviations chars are contained in the author name
+    # 2. the abbreviation chars are in the correct order (note there are exceptions e.g. "Nils Inker" with abbreviation "in" for "Inker" would not be found)
+    # further there are conditions that higher the certainty of the match:
+    # 3. the abbreviation chars match the first characters of the author's name parts (e.g. first name, middle name...)
+    # 4. there is one abbreviation char that matches the first char of the last name
+    # 4.1 that char is not the first char of the abbreviation
 
-    for author_abbreviation in article_author_abbreviations:
+    fuzzy_matches = []
+
+    for author_abbreviation in author_abbreviations:
         matches = []
-        for author, frequency_and_abbreviation in all_authors_with_frequency.items():
-            if author_abbreviation == frequency_and_abbreviation['abbreviation']:
-                matches.append({'author': author, 'frequency': frequency_and_abbreviation['frequency'], 'certainty': None})
+
+        for author, frequency_and_abbreviation in all_authors.items():
+            full_name_split = re.split(r' |-', author)
+
+            if len(full_name_split) < 2:
+                # author's name is likely not a real name
+                continue
+
+            first_name = full_name_split[0]
+            last_name = full_name_split[-1]
+            certainty = 0
+
+            if are_necessary_conditions_fullfilled(author, author_abbreviation) is False:
+                continue
+
+            certainty = calculate_certainty(author_abbreviation, certainty, first_name, full_name_split, last_name)
+
+            matches.append(
+                {'author': author, 'frequency': frequency_and_abbreviation['frequency'], 'certainty': certainty})
+
+        if len(matches) == 0:
+            continue
+
+        add_frequency_based_certainty_for_fuzzy_matches(matches)
+
+        matches = sorted(matches, key=lambda k: k['certainty'], reverse=True)
+        fuzzy_matches.append(
+            {'abbreviation': author_abbreviation, 'author': matches[0]['author'], 'certainty': matches[0]['certainty']})
+
+    return fuzzy_matches
+
+
+def add_frequency_based_certainty_for_fuzzy_matches(matches):
+    frequency_values = [match['frequency'] for match in matches]
+    min_frequency = min(frequency_values)
+    max_frequency = max(frequency_values)
+    if min_frequency == max_frequency:  # avoid division by zero
+        for idx, match in enumerate(matches):
+            matches[idx]['certainty'] += 0.3
+    else:
+        # update certainty based on normalized frequency
+        for idx, match in enumerate(matches):
+            matches[idx]['certainty'] += 0.3 * (match['frequency'] - min_frequency) / (
+                    max_frequency - min_frequency)
+            # multiplies a penalty term for small frequencies: min(0.05 *  frequency,1)
+            # matches[idx]['certainty'] = min(0.2 * matches[idx]['frequency'], 1) * matches[idx]['certainty']
+
+
+def calculate_certainty(author_abbreviation, certainty, first_name, full_name_split, last_name):
+    # conditions that increase certainty
+    # add 0.2 certainty if for each split in full_name_split there is a char in the abbreviation and it is matching the index
+    if len(author_abbreviation) == len(full_name_split):
+        for idx, split in enumerate(full_name_split):
+            if author_abbreviation[idx] == split[0]:
+                certainty += 0.2
+    else:
+        if author_abbreviation[0] == first_name[0]:
+            certainty += 0.2
+
+        if author_abbreviation[-1] == last_name[0]:
+            certainty += 0.2
+
+        elif any([char == last_name[0] for char in author_abbreviation]):
+            certainty += 0.1
+            if any([char == last_name[0] for char in author_abbreviation[1:]]):
+                # if it is not the first character
+                certainty += 0.1
+
+    return certainty
+
+
+def are_necessary_conditions_fullfilled(author, author_abbreviation):
+    if all([char in author for char in author_abbreviation]) is False:
+        return False
+
+    if all([author_abbreviation.index(char) <= author.index(char) for char in
+            author_abbreviation]) is False:  # condition 2
+        return False
+
+    indices = [author.index(char) for char in author_abbreviation]  # condition 2
+    if all([indices[idx] <= indices[idx + 1] for idx in range(len(indices) - 1)]) is False:
+        return False
+
+    return True
+
+def find_direct_matches(all_authors, author_abbreviations, direct_matches):
+    for author_abbreviation in author_abbreviations:
+        matches = []
+        for author, frequency_and_abbreviation in all_authors.items():
+            if author_abbreviation == frequency_and_abbreviation['naive_abbreviation']:
+                matches.append(
+                    {'author': author, 'frequency': frequency_and_abbreviation['frequency'], 'certainty': None})
 
         # assign direct matches the author with the highest frequency
         # assign base certainty of 0.7 for being a direct match
         # adds up possible 0.2 certainty
         # assigns 0.1 certainty if all authors have the same frequency
         if len(matches) > 0:
-            # calculate certainty based on normalized frequency
-            frequency_values = [match['frequency'] for match in matches]
-            min_frequency = min(frequency_values)
-            max_frequency = max(frequency_values)
-            if max_frequency == min_frequency: # avoid division by zero
-                if len(matches) == 1:
-                    matches[0]['certainty'] = 0.9
-                else:
-                    for idx, match in enumerate(matches):
-                        matches[idx]['certainty'] = 0.1
-            else:
-                # update certainty based on normalized frequency
-                for idx, match in enumerate(matches):
-                    matches[idx]['certainty'] = 0.7
-                    matches[idx]['certainty'] += 0.2 * (match['frequency'] - min_frequency) / (max_frequency - min_frequency)
-                    # multiplies a penalty term for small frequencies: min(0.2 *  frequency,1)
-                    #matches[idx]['certainty'] = min(0.2 * matches[idx]['frequency'], 1) * matches[idx]['certainty']
+            add_frequency_based_certainty_for_direct_matches(matches)
 
             matches = sorted(matches, key=lambda k: k['certainty'], reverse=True)
-            direct_matches.append({'abbreviation': author_abbreviation, 'author': matches[0]['author'], 'certainty': matches[0]['certainty']})
+            direct_matches.append({'abbreviation': author_abbreviation, 'author': matches[0]['author'],
+                                   'certainty': matches[0]['certainty']})
 
-    if len(direct_matches) > 0:
-        return direct_matches
 
-    # fuzzy matches follow the conditions:
-    # 1. all abbreviations chars are contained in the author name
-    # 2. the abbreviation chars are in the correct order (note there are exceptions e.g. "Nils Inker" with abbreviation "in" for "Inker" would not be found)
-    # further there are conditions that higher the certainty of the match:
-    # 3. the first char has to match the first char of the author first name
-    # 4. one char (not the first one) has to match the first char of the author last name
-
-    fuzzy_matches = []
-    for author_abbreviation in article_author_abbreviations:
-        matches = []
-        for author, frequency_and_abbreviation in all_authors_with_frequency.items():
-            full_name_split = re.split(r' |-', author)
-            first_name = full_name_split[0]
-            last_name = full_name_split[-1]
-            certainty = 0
-
-            # necessary condition
-            if all([char in author for char in author_abbreviation]) is False:
-                continue
-            if all([author_abbreviation.index(char) <= author.index(char) for char in author_abbreviation]) is False: # condition 2
-                continue
-
-            indices = [author.index(char) for char in author_abbreviation] # condition 2
-            if all([indices[idx] <= indices[idx + 1] for idx in range(len(indices) - 1)]) is False:
-                continue
-
-            # conditions that increase certainty
-            # add 0.2 certainty if for each split in full_name_split there is a char in the abbreviation and it is matching the index
-            if len(author_abbreviation) == len(full_name_split):
-                for idx, split in enumerate(full_name_split):
-                    if author_abbreviation[idx] == split[0]:
-                        certainty += 0.2
-            else:
-                if author_abbreviation[0] == first_name[0]:
-                    certainty += 0.2
-
-                if author_abbreviation[-1] == last_name[0]:
-                    certainty += 0.2
-
-                elif any([char == last_name[0] for char in author_abbreviation]):
-                    certainty += 0.1
-                    if any([char == last_name[0] for char in author_abbreviation[1:]]):
-                        # if it is not the first character
-                        certainty += 0.1
-
-            matches.append({'author': author, 'frequency': frequency_and_abbreviation['frequency'], 'certainty': certainty})
-
-        if len(matches) == 0:
-            continue
-
-        frequency_values = [match['frequency'] for match in matches]
-        min_frequency = min(frequency_values)
-        max_frequency = max(frequency_values)
-
-        if min_frequency == max_frequency: # avoid division by zero
-            for idx, match in enumerate(matches):
-                matches[idx]['certainty'] += 0.3
+def add_frequency_based_certainty_for_direct_matches(matches):
+    # calculate certainty based on normalized frequency
+    frequency_values = [match['frequency'] for match in matches]
+    min_frequency = min(frequency_values)
+    max_frequency = max(frequency_values)
+    if max_frequency == min_frequency:  # avoid division by zero
+        if len(matches) == 1:
+            matches[0]['certainty'] = 0.8
         else:
-            # update certainty based on normalized frequency
             for idx, match in enumerate(matches):
-                matches[idx]['certainty'] += 0.3 * (match['frequency'] - min_frequency) / (max_frequency - min_frequency)
-                # multiplies a penalty term for small frequencies: min(0.05 *  frequency,1)
-                #matches[idx]['certainty'] = min(0.2 * matches[idx]['frequency'], 1) * matches[idx]['certainty']
+                matches[idx]['certainty'] = 0.1
+    else:
+        # update certainty based on normalized frequency
+        for idx, match in enumerate(matches):
+            matches[idx]['certainty'] = 0.7
+            matches[idx]['certainty'] += 0.2 * (match['frequency'] - min_frequency) / (
+                    max_frequency - min_frequency)
+            # multiplies a penalty term for small frequencies: min(0.2 *  frequency,1)
+            # matches[idx]['certainty'] = min(0.2 * matches[idx]['frequency'], 1) * matches[idx]['certainty']
 
-        matches = sorted(matches, key=lambda k: k['certainty'], reverse=True)
-        fuzzy_matches.append({'abbreviation': author_abbreviation, 'author': matches[0]['author'], 'certainty': matches[0]['certainty']})
 
-    return fuzzy_matches
+def prepare_all_authors_dict(all_authors_with_frequency):
+    for author, frequency in all_authors_with_frequency.items():
+        author_abbreviation = ''.join([first_char[0] for first_char in author.split(' ')])
+        all_authors_with_frequency[author] = {'frequency': frequency, 'naive_abbreviation': author_abbreviation}
 
 
+def get_abbreviations(focused_article):
+    article_author_abbreviations = []
+    for idx, author in enumerate(eval(focused_article['author_array'])):
+        if eval(focused_article['author_is_abbreviation'])[idx]:
+            article_author_abbreviations.append(author.lower().replace('.', ''))
+    return article_author_abbreviations
+
+
+def add_organization_authors_to_matches(direct_matches, focused_article):
+    author_array = eval(focused_article['author_array'])
+    remaining_authors = []
+    remaining_author_is_abbreviation = []
+    for author in author_array:
+        if author.lower() in organizations:
+            direct_matches.append({'abbreviation': author, 'author': author, 'certainty': 1})
+        else:
+            remaining_authors.append(author)
+            remaining_author_is_abbreviation.append(
+                focused_article['author_is_abbreviation'][author_array.index(author)])
+    return remaining_author_is_abbreviation, remaining_authors
 
 
 def get_succeeding_focused_article(articles_in_window, focused_article):

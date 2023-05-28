@@ -2,8 +2,6 @@ import sqlite3
 import json
 import re
 import sys
-import time
-import logging
 import traceback
 from datetime import datetime
 import spacy
@@ -15,7 +13,7 @@ nlp = spacy.load('de_core_news_sm')
 
 redaktionsAuthorList = ['Redaktion.', 'red.']
 punctuation_blocklist = ['»', '-', '“', '*', '"']
-punctuation_blocklist_keep_whitespace = [' -', '  ']
+punctuation_blocklist_keep_whitespace = [' -', '  ', '“ ', ' „']
 inner_punctuation_blocklist = [u'\xa0']
 organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline']
 
@@ -357,7 +355,7 @@ def check_if_is_abbreviation(string):
 
 
 def save_to_database(articles, logger):
-    con = sqlite3.connect('../data/articles_with_basic_information_improved_author_recognition.db')
+    con = sqlite3.connect('../data/articles_with_author_mapping.db')
     cur = con.cursor()
     global failed
 

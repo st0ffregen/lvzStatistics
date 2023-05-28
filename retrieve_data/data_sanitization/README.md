@@ -5,14 +5,13 @@
 * remove not unique urls
 * artikel vor 2010 loeschen, dann habe ich genau 12 Jahre LVZ
 * alle artikel in articles_with_basic_information ueberfuehren
-* bessere autoren recognition in articles_with_basic_information_improved_author_recognition
-  * success: 366501
-  * failed: 1216
+* autoren recognition in articles_with_author_mapping
+  * success: 367694
+  * failed: 23
   * notLVZ: 166612
-  * select count(*) from articles where organization = 'lvz' and author_array is Null --> 9282
+  * select count(*) from articles where organization = 'lvz' and author_array is Null --> 9248
 
 # To be done
-* seit letztem run ist failed um min. 1000 gestiegen. das untersuchen
 * verknuepfung autoren zu autorenkuerzeln
   * fuzzy matching (idee noch nciht ausgereif)
   * direktes matching ueber anfangsbuchstaben des vornamens und des nachnamens vergleichen mit kürzel
@@ -27,6 +26,7 @@
     * verknuepfung artikel-autor muss wohl ueber n:m tabelle realisiert werden, weil ich wahrscheinlich erstmal meherer einträge pro autor in autor tabelle habe durch doppelte abbrs
       * ein artikel mit nem full name soll dann auf all diese rows mappen (artikel mit abbrs können 1:m mappen)
   * evtl. pro abbr die top 1-3 autoren nehmen und dann sodoku mäßig vergleichen
+  * fehlererkennung: wie viele distinct abbrs gibt es mehr als distinct authors (kann natürlich auch sein, dass es tat. mehr abbrs als 1 pro autor gibt, aber das ist wahrscheinlich die minderheit)
 
 # other
 * analyzeDataAndMoveToElastic.log can probably be removed

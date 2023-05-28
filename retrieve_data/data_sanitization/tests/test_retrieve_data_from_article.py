@@ -58,6 +58,17 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
             retrieveDataFromArticle.getAuthorString('some text. Mark Daniel')
         )
 
+    def test_get_author_string_single_full_name_without_von_with_quotation(self):
+        # Case 1.2
+        # Single full name without "Von" prefix, separated by a period
+        self.assertEqual(
+            (
+                ['Thomas Müller'],
+                [False]
+            ),
+            retrieveDataFromArticle.getAuthorString('müssen wir dann mit unseren Kreisräten abstimmen.“ Thomas Müller')
+        )
+
     def test_get_author_string_single_full_name_without_von_with_period_and_weird_unicode(self):
         # Case 1.2
         # Single full name without "Von" prefix, separated by a period
