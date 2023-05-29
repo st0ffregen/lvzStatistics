@@ -26,36 +26,28 @@ def main():
 def match_author_to_abbreviation():
     con, cur = get_db_connection()
     months = 6
-    article_count = get_article_count(cur)
+    articles = get_articles_with_abbreviations(cur)
+    articles = articles[4758:]
     current_abbreviation_to_author_mapping = []
 
-    oldest_article = get_oldest_article(cur)
-    window_articles = get_article_window(cur, oldest_article, months=months)
-    focused_article = oldest_article
+    window_articles = get_article_window(cur, articles[0], months=months)
 
-    for i in tqdm.tqdm(range(article_count)):
+    for idx, article in enumerate(tqdm.tqdm(articles)):
         window_articles_authors_with_frequency = get_authors_with_frequency(window_articles)
 
-        matches = search_for_full_name(focused_article, window_articles_authors_with_frequency)
+        matches = search_for_full_name(article, window_articles_authors_with_frequency)
 
-        if matches is None: # focused article has no abbreviations
-            focused_article = get_succeeding_focused_article(window_articles, focused_article)
-            continue
-
-        add_article_id(focused_article, matches)
+        add_article_id(article, matches)
         current_abbreviation_to_author_mapping.extend(matches)
 
-        focused_article = get_succeeding_focused_article(window_articles, focused_article)
-
-        if focused_article is None:
+        if article is None:
             save_matches_to_db(con, cur, current_abbreviation_to_author_mapping)
             break
 
-        if i > 0 and i % batch_size == 0:
+        if idx > 0 and idx % batch_size == 0:
             save_matches_to_db(con, cur, current_abbreviation_to_author_mapping)
             current_abbreviation_to_author_mapping = []
-
-        window_articles = get_article_window(cur, focused_article, months=months)
+            window_articles = get_article_window(cur, article, months=months)
 
 
 def save_matches_to_db(con, cur, current_abbreviation_to_author_mapping):
@@ -75,9 +67,22 @@ def add_article_id(focused_article, matches):
         match['article_id'] = focused_article['id']
 
 
-def get_article_count(cur):
-    article_count = cur.execute('select count(*) from articles where organization = "lvz"').fetchone()[0] + 1
-    return article_count
+def get_articles_with_abbreviations(cur):
+    cur.execute('select id, url, author_array, author_is_abbreviation, published_at from articles where organization = "lvz" and author_is_abbreviation is not null and author_is_abbreviation like "%True%" order by published_at asc')
+    rows = cur.fetchall()
+    articles = []
+
+    for row in rows:
+        row_dict = {
+            'id': row[0],
+            'url': row[1],
+            'author_array': row[2],
+            'author_is_abbreviation': row[3],
+            'published_at': row[4]
+        }
+        articles.append(row_dict)
+
+    return articles
 
 
 def get_db_connection():

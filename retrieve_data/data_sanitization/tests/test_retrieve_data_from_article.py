@@ -11,7 +11,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Mark Daniel'],
                 [False]
             ),
-            retrieveDataFromArticle.getAuthorString('some text. Von Mark Daniel')
+            retrieveDataFromArticle.get_author('some text. Von Mark Daniel')
         )
 
     def test_get_author_string_single_full_name_with_von_and_text_including_a_link(self):
@@ -22,7 +22,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Mark Daniel'],
                 [False]
             ),
-            retrieveDataFromArticle.getAuthorString('/a/link Von Mark Daniel')
+            retrieveDataFromArticle.get_author('/a/link Von Mark Daniel')
         )
 
     def test_get_author_string_single_full_name_with_von_and_author_has_hyphen(self):
@@ -33,7 +33,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Manuela Engelmann-Bunk'],
                 [False]
             ),
-            retrieveDataFromArticle.getAuthorString('some text. Von Manuela Engelmann-Bunk')
+            retrieveDataFromArticle.get_author('some text. Von Manuela Engelmann-Bunk')
         )
 
     def test_get_author_string_single_full_name_with_von_and_author_has_dot(self):
@@ -44,18 +44,36 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Manuela E. Bunk'],
                 [False]
             ),
-            retrieveDataFromArticle.getAuthorString('some text. Von Manuela E. Bunk')
+            retrieveDataFromArticle.get_author('some text. Von Manuela E. Bunk')
         )
 
     def test_get_author_string_single_full_name_without_von_with_period(self):
         # Case 1.2
-        # Single full name without "Von" prefix, separated by a period
+        # Single full name without "Von" prefix, separated by a period or colon
         self.assertEqual(
             (
                 ['Mark Daniel'],
                 [False]
             ),
-            retrieveDataFromArticle.getAuthorString('some text. Mark Daniel')
+            retrieveDataFromArticle.get_author('some text. Mark Daniel')
+        )
+
+    def test_get_author_string_single_full_name_without_von_with_colon(self):
+        # Case 1.2
+        # Single full name without "Von" prefix, separated by a period or colon
+        self.assertEqual(
+            (
+                ['Mark Daniel'],
+                [False]
+            ),
+            retrieveDataFromArticle.get_author('some text: Mark Daniel')
+        )
+        self.assertEqual(
+            (
+                ['Janina Fleischer'],
+                [False]
+            ),
+            retrieveDataFromArticle.get_author('Roman.S. Fischer Verlag;272 Seiten,19,95 Euro: Janina Fleischer')
         )
 
     def test_get_author_string_single_full_name_without_von_with_quotation(self):
@@ -66,7 +84,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Thomas Müller'],
                 [False]
             ),
-            retrieveDataFromArticle.getAuthorString('müssen wir dann mit unseren Kreisräten abstimmen.“ Thomas Müller')
+            retrieveDataFromArticle.get_author('müssen wir dann mit unseren Kreisräten abstimmen.“ Thomas Müller')
         )
 
     def test_get_author_string_single_full_name_without_von_with_period_and_weird_unicode(self):
@@ -77,7 +95,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Mark Daniel'],
                 [False]
             ),
-            retrieveDataFromArticle.getAuthorString(u'some text. \xa0 Mark Daniel')
+            retrieveDataFromArticle.get_author(u'some text. \xa0 Mark Daniel')
         )
 
     def test_get_author_string_single_full_name_without_von_missing_period(self):
@@ -88,7 +106,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Mark Daniel'],
                 [False]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text Mark Daniel')
+            retrieveDataFromArticle.get_author('Some text Mark Daniel')
         )
     def test_get_author_string_single_full_name_without_von_missing_period_leading_hyper_link(self):
         # Case 1.3
@@ -98,7 +116,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Michael Dick'],
                 [False]
             ),
-            retrieveDataFromArticle.getAuthorString('an eine große Zeit des Leipziger Fußballs. www.initiative1903.de.tl Michael Dick')
+            retrieveDataFromArticle.get_author('an eine große Zeit des Leipziger Fußballs. www.initiative1903.de.tl Michael Dick')
         )
 
     def test_get_author_string_single_full_name_with_von_and_text_keyword(self):
@@ -109,7 +127,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Denise Peikert'],
                 [False]
             ),
-            retrieveDataFromArticle.getAuthorString('some text. Von Denise Peikert (Text) und André Kempner (Fotos)')
+            retrieveDataFromArticle.get_author('some text. Von Denise Peikert (Text) und André Kempner (Fotos)')
         )
 
     def test_get_author_string_multiple_full_names_with_von(self):
@@ -120,7 +138,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Mark Daniel', 'Theresa Moosmann'],
                 [False, False]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von Mark Daniel und Theresa Moosmann')
+            retrieveDataFromArticle.get_author('Some text. Von Mark Daniel und Theresa Moosmann')
         )
 
     def test_get_author_string_multiple_full_names_without_von_with_period(self):
@@ -131,7 +149,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Mark Daniel', 'Theresa Moosmann'],
                 [False, False]
             ),
-            retrieveDataFromArticle.getAuthorString('Some Text. Mark Daniel und Theresa Moosmann')
+            retrieveDataFromArticle.get_author('Some Text. Mark Daniel und Theresa Moosmann')
         )
 
     def test_get_author_string_multiple_full_names_without_von_missing_period(self):
@@ -142,7 +160,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Mark Daniel', 'Theresa Moosmann'],
                 [False, False]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text Mark Daniel und Theresa Moosmann')
+            retrieveDataFromArticle.get_author('Some text Mark Daniel und Theresa Moosmann')
         )
 
     def test_get_author_string_multiple_full_names_with_von_slash(self):
@@ -153,7 +171,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Regina Katzer', 'Mathias Wöbking', 'Mark Daniel'],
                 [False, False, False]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von Regina Katzer / Mathias Wöbking / Mark Daniel')
+            retrieveDataFromArticle.get_author('Some text. Von Regina Katzer / Mathias Wöbking / Mark Daniel')
         )
 
     def test_get_author_string_multiple_full_names_with_von_commas_und(self):
@@ -164,7 +182,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Kay Würker', 'Jens Rosenkranz', 'Thomas Haegeler', 'Ellen Paul', 'Dana Weber'],
                 [False, False, False, False, False]
             ),
-            retrieveDataFromArticle.getAuthorString(
+            retrieveDataFromArticle.get_author(
                 'Some text. Von Kay Würker, Jens Rosenkranz, Thomas Haegeler, Ellen Paul und Dana Weber')
         )
 
@@ -176,7 +194,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Kay Würker', 'Jens Rosenkranz', 'Thomas Haegeler', 'Ellen Paul', 'Dana Weber'],
                 [False, False, False, False, False]
             ),
-            retrieveDataFromArticle.getAuthorString(
+            retrieveDataFromArticle.get_author(
                 'Some text. Von Kay Würker, Jens Rosenkranz, Thomas Haegeler, Ellen Paul, Dana Weber')
         )
 
@@ -188,7 +206,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['FD'],
                 [True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von F.D.')
+            retrieveDataFromArticle.get_author('Some text. Von F.D.')
         )
 
     def test_get_author_string_single_abbreviation_with_von_with_white_space(self):
@@ -199,7 +217,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['FD'],
                 [True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von F. D.')
+            retrieveDataFromArticle.get_author('Some text. Von F. D.')
         )
 
     def test_get_author_string_single_abbreviation_without_von(self):
@@ -210,7 +228,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['ast'],
                 [True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. ast')
+            retrieveDataFromArticle.get_author('Some text. ast')
         )
 
     def test_get_author_string_single_abbreviation_with_von(self):
@@ -221,7 +239,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['ast'],
                 [True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von ast')
+            retrieveDataFromArticle.get_author('Some text. Von ast')
         )
 
     def test_fail_get_author_string_single_abbreviation_with_von_because_abbreviation_too_long(self):
@@ -231,10 +249,10 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
             (
                 None, None
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von toooooLong')
+            retrieveDataFromArticle.get_author('Some text. Von toooooLong')
         )
 
-    def test_get_author_string_mix_of_abbreviations_and_full_names_with_von_slash(self):
+    def test_get_author_string_mix_of_abbreviations_and_full_names_with_von_and_slash(self):
         # Case 4.1/7
         # Mix of abbreviations and full names, separated by a slash and "Von " prefix
         self.assertEqual(
@@ -242,49 +260,67 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['LVZ', 'lg'],
                 [True, True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von LVZ/lg')
+            retrieveDataFromArticle.get_author('Some text. Von LVZ/lg')
         )
         self.assertEqual(
             (
                 ['DAZ', 'TS'],
                 [True, True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von DAZ/T.S.')
+            retrieveDataFromArticle.get_author('Some text. Von DAZ/T.S.')
         )
         self.assertEqual(
             (
                 ['DAZ', 'TS', 'abc', 'ABCD'],
                 [True, True, True, True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von DAZ/T.S./abc/ABCD')
+            retrieveDataFromArticle.get_author('Some text. Von DAZ/T.S./abc/ABCD')
         )
         self.assertEqual(
             (
                 ['Mark Daniel', 'ABCD'],
                 [False, True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von Mark Daniel/ABCD')
+            retrieveDataFromArticle.get_author('Some text. Von Mark Daniel/ABCD')
         )
         self.assertEqual(
             (
                 ['ABCD', 'Mark Daniel'],
                 [True, False]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von ABCD/Mark Daniel')
+            retrieveDataFromArticle.get_author('Some text. Von ABCD/Mark Daniel')
         )
         self.assertEqual(
             (
                 ['ABCD', 'Mark Tim Daniel'],
                 [True, False]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von ABCD/Mark Tim Daniel')
+            retrieveDataFromArticle.get_author('Some text. Von ABCD/Mark Tim Daniel')
         )
         self.assertEqual(
             (
                 ['ht', 'art'],
                 [True, True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von ht/-art')
+            retrieveDataFromArticle.get_author('Some text. Von ht/-art')
+        )
+
+    def test_get_author_string_mix_of_abbreviations_and_full_names_without_von_and_slash(self):
+        # Case 4.3/7
+        # Mix of abbreviations and full names, separated by a slash and "Von " prefix
+        self.assertEqual(
+            (
+                ['lyn', 'Thomas Klein'],
+                [True, False]
+            ),
+            retrieveDataFromArticle.get_author('werden, LVZ-Online schaltet einen Live-Ticker. lyn/Thomas Klein')
+        )
+        self.assertEqual(
+            (
+                ['Thomas Klein', 'lyn'],
+                [False, True]
+            ),
+            retrieveDataFromArticle.get_author('werden, LVZ-Online schaltet einen Live-Ticker. Thomas Klein/lyn')
         )
 
     def test_get_author_string_mix_of_abbreviations_and_full_names_with_von_comma(self):
@@ -295,7 +331,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['LVZ', 'lg'],
                 [True, True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von LVZ, lg')
+            retrieveDataFromArticle.get_author('Some text. Von LVZ, lg')
         )
 
     def test_fail_on_get_author_string_multiple_abbreviations_with_von_slash_because_abbreviation_to_long(self):
@@ -305,7 +341,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
             (
                 None, None
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von DAZ/tooooooLong')
+            retrieveDataFromArticle.get_author('Some text. Von DAZ/tooooooLong')
         )
 
     def test_fail_on_get_author_string_single_full_name_with_period_randomly_placed(self):
@@ -314,7 +350,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
             (
                 None, None
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von Mark. Daniel')
+            retrieveDataFromArticle.get_author('Some text. Von Mark. Daniel')
         )
 
     def test_get_author_string_editorial_abbreviation(self):
@@ -325,21 +361,21 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['LVZ'],
                 [True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Redaktion.')
+            retrieveDataFromArticle.get_author('Some text. Redaktion.')
         )
         self.assertEqual(
             (
                 ['LVZ'],
                 [True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. red.')
+            retrieveDataFromArticle.get_author('Some text. red.')
         )
         self.assertEqual(
             (
                 ['LVZ'],
                 [True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. red')
+            retrieveDataFromArticle.get_author('Some text. red')
         )
 
     def test_get_author_string_no_author(self):
@@ -350,7 +386,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ["LVZ"],
                 [True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text.')
+            retrieveDataFromArticle.get_author('Some text.')
         )
 
     def test_get_author_string_no_author_text_ends_with_quotation_mark(self):
@@ -361,7 +397,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ["LVZ"],
                 [True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text."')
+            retrieveDataFromArticle.get_author('Some text."')
         )
 
     def test_get_author_with_co_author_abbreviation(self):
@@ -372,7 +408,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['dpa', 'mro'],
                 [True, True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von mro (mit dpa)')
+            retrieveDataFromArticle.get_author('Some text. Von mro (mit dpa)')
         )
 
     def test_get_author_string_with_co_author_full_name(self):
@@ -383,7 +419,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Theresa Moosmann', 'Mark Daniel'],
                 [False, False]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von Mark Daniel (mit Theresa Moosmann)')
+            retrieveDataFromArticle.get_author('Some text. Von Mark Daniel (mit Theresa Moosmann)')
         )
 
     def test_get_author_string_full_names_without_von_separating_slash(self):
@@ -393,7 +429,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['Robert Berlin', 'Anne-Kathrin Sturm'],
                 [False, False]
             ),
-            retrieveDataFromArticle.getAuthorString('Hörmann 3, Bönke 1. Robert Berlin/Anne-Kathrin Sturm')
+            retrieveDataFromArticle.get_author('Hörmann 3, Bönke 1. Robert Berlin/Anne-Kathrin Sturm')
         )
 
     def test_get_author_string_abbreviations_without_von_separating_slash(self):
@@ -403,7 +439,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['RND', 'seb'],
                 [True, True]
             ),
-            retrieveDataFromArticle.getAuthorString('Nachhaken des jungen Reporters. RND/seb')
+            retrieveDataFromArticle.get_author('Nachhaken des jungen Reporters. RND/seb')
         )
     def test_get_author_string_organization_abbreviation(self):
         self.assertEqual(
@@ -411,7 +447,16 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 ['mazonline'],
                 [True]
             ),
-            retrieveDataFromArticle.getAuthorString('Some text. Von MAZonline')
+            retrieveDataFromArticle.get_author('Some text. Von MAZonline')
+        )
+
+    def test_get_author_replace_interview_with_von_keyword(self):
+        self.assertEqual(
+            (
+                ['Matthias Roth'],
+                [False]
+            ),
+            retrieveDataFromArticle.get_author('Bundesligaspiele. Wir sind doch Vollprofis. Interview: Matthias Roth')
         )
 
     def test_get_author_string_return_null(self):
@@ -419,17 +464,29 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
             (
                 None, None
             ),
-            retrieveDataFromArticle.getAuthorString('2021 bis 20. März 2022 im Museum für Druckkunst Leipzig*')
+            retrieveDataFromArticle.get_author('2021 bis 20. März 2022 im Museum für Druckkunst Leipzig*')
         )
         self.assertEqual(
             (
                 None, None
             ),
-            retrieveDataFromArticle.getAuthorString('in die Stadt. Von ChristianKunze') # falsely written together
+            retrieveDataFromArticle.get_author('in die Stadt. Von ChristianKunze') # falsely written together
         )
         self.assertEqual(
             (
                 None, None
             ),
-            retrieveDataFromArticle.getAuthorString(' Präparat aus dem Westen haben wollten. Von MAZ-Online/gel') # abbreviation too long / contains hyphen
+            retrieveDataFromArticle.get_author(' Präparat aus dem Westen haben wollten. Von MAZ-Online/gel') # abbreviation too long / contains hyphen
         )
+
+        # M.Orbeck recognition fails due to missing white space
+        self.assertEqual(
+            (
+                None, None
+            ),
+            retrieveDataFromArticle.get_author('Heimatforschung erhalten. O. Büchel/M.Orbeck')
+        )
+
+
+
+

@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 import logging
 import traceback
 from datetime import datetime
-from retrieveDataFromArticle import getAuthorString
+from retrieveDataFromArticle import get_author
 
 
 class NoContextTagError(Exception):
@@ -94,7 +94,7 @@ def downloadAuthorName(url):
         if author_paragraph.startswith('von '):
             author_paragraph = author_paragraph.replace('von ', '')
 
-        return getAuthorString(author_paragraph, False)
+        return get_author(author_paragraph, False)
 
     except IndexError as e:
         return None, None

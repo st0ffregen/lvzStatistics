@@ -6,10 +6,10 @@
 * artikel vor 2010 loeschen, dann habe ich genau 12 Jahre LVZ
 * alle artikel in articles_with_basic_information ueberfuehren
 * autoren recognition in articles_with_author_mapping
-  * success: 367694
-  * failed: 23
+  * success: 367710
+  * failed: 7
   * notLVZ: 166612
-  * select count(*) from articles where organization = 'lvz' and author_array is Null --> 9248
+  * select count(*) from articles where organization = 'lvz' and author_array is Null --> 6822
 
 # To be done
 * verknuepfung autoren zu autorenkuerzeln
