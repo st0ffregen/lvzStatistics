@@ -230,6 +230,13 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
             ),
             retrieveDataFromArticle.get_author('Some text. ast')
         )
+        self.assertEqual(
+            (
+                ['abö'],
+                [True]
+            ),
+            retrieveDataFromArticle.get_author('hannig kündigte zugleich an, zu prüfen, ob der gestellte insolvenzantrag wirksam ist. abö')
+        )
 
     def test_get_author_string_single_abbreviation_with_von(self):
         # Case 3.3
@@ -328,6 +335,13 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 [True, True]
             ),
             retrieveDataFromArticle.get_author('Angaben. „Vieles ist derzeit noch unklar“, erklärte Braunsdorf. Der Polizist blieb unverletzt. joka/nöß')
+        )
+        self.assertEqual(
+            (
+                ['lyn', 'kno'],
+                [True, True]
+            ),
+            retrieveDataFromArticle.get_author('Jeder dritte Studienanfänger stammte 2013 aus dem Westen. lyn / kno')
         )
 
     def test_get_author_string_mix_of_abbreviations_and_full_names_with_von_comma(self):
@@ -511,6 +525,28 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
             ),
             retrieveDataFromArticle.get_author('Heimatforschung erhalten. O. Büchel/M.Orbeck')
         )
+        self.assertEqual(
+            (
+                None, None
+            ),
+            retrieveDataFromArticle.get_author('Anteilnahme. Je mehr Geld zusammenkomme, desto besser. Zur Spendenaktion LVZ')
+        )
+
+
+    def test_get_author_string_handle_digits(self):
+        self.assertEqual(
+            (
+                ['okz'],
+                [True]
+            ),
+            retrieveDataFromArticle.get_author('Polizeirevier Grimma, Tel. 03437/708925100, zu melden. Von okz')
+        )
+        self.assertEqual(
+            (
+                None, None
+            ),
+            retrieveDataFromArticle.get_author('Kreissportbund Nordsachsen, Leipziger Straße 44, 04860 Torgau, Telefon: 03421/969 70 31, Mail: ruhs@ksb-nordsachsen.de')
+        )
 
     def test_half_positive_edge_cases(self):
         # cases that get an author assigned but are not 100% correct
@@ -520,4 +556,17 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 [False]
             ),
             retrieveDataFromArticle.get_author('dieser neuen Bilder statt. Reinhard Rädler / Olaf Barth Aus der Leipziger Volkszeitung vom 22.05.2013 Reinhard Rädler')
+        )
+        self.assertEqual(
+            (
+                ['abö'],
+                [True]
+            ),
+            retrieveDataFromArticle.get_author('hannig kündigte zugleich an, zu prüfen, ob der gestellte insolvenzantrag wirksam ist. abö')
+        )
+        self.assertEqual(
+            (
+                ['LVZ'], [True]
+            ),
+            retrieveDataFromArticle.get_author('Verteilung der Flüchtlinge beinhaltet.“ Andreas Hummel/ Julia Vollmer (mit dpa) Die Kommentarfunktion steht morgen wieder zur Verfügung.')
         )

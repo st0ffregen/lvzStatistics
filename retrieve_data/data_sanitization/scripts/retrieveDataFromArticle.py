@@ -169,8 +169,9 @@ def remove_special_cases_from_text(article_text):
 
     article_text = replace_keywords(article_text, r'.*\s(Interview:)\s.*$')
     article_text = replace_keywords(article_text, r'.*\s(\d{1,2}\.\d{1,2}\.\d{2,4})\s.*$')
-    article_text = replace_keywords(article_text, r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b')
-    article_text = replace_keywords(article_text, r'\b(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]{2,}(?:\.[a-zA-Z]{2,}){1,}(?:\/[a-zA-Z0-9-]+)*(?:\.html)?')
+    #article_text = replace_keywords(article_text, r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b')
+    #article_text = replace_keywords(article_text, r'\b(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]{2,}(?:\.[a-zA-Z]{2,}){1,}(?:\/[a-zA-Z0-9-]+)*(?:\.html)?')
+    article_text = remove_obvious_noise(article_text)
 
     return article_text, authors, is_abbreviations
 
@@ -184,7 +185,6 @@ def replace_keywords(article_text, reg):
 
 def getAuthorString(article_text):
     article_text = article_text[-100:]
-    article_text = remove_obvious_noise(article_text)
     article_text = remove_outer_unwanted_punctuation(article_text)
     article_text = remove_inner_unwanted_punctuation(article_text)
 
@@ -204,7 +204,6 @@ def getAuthorString(article_text):
 
     if article_text is None:
         return None, None
-
 
     # Case 3.1: Single abbreviation with "Von" prefix, separated by a period
     match = regex.search(r'Von\s+(\w\.\s?\w\.)$', article_text, flags=re.UNICODE)
@@ -237,7 +236,7 @@ def getAuthorString(article_text):
         return authors, is_abbreviations
 
     # Case 4.1/7???: Mix of full names and or multiple abbreviations without "Von" prefix, separated by a slash
-    match = regex.search(rf'(?:\.|:)\s(?!Von\s)((?:-?\w{{2,6}}|{re_name})\/(?:-?\w{{2,6}}|{re_name}))+$', article_text, flags=re.UNICODE)
+    match = regex.search(rf'(?:\.|:)\s(?!Von\s)((?:-?\w{{2,6}}|{re_name})\s?\/\s?(?:-?\w{{2,6}}|{re_name}))+$', article_text, flags=re.UNICODE)
     if match:
         splits = re.split(r'\s*/\s*', match.group(1))
 
@@ -395,9 +394,14 @@ def getAuthorString(article_text):
     # Case 1.2: Single full name without "Von" prefix, separated from the text by a period or colon
     match = regex.search(rf'(?:\.|:)\s(?!Von\s){re_name}$', article_text, flags=re.UNICODE)
     if match:
-        authors.append(match.group(1))
-        is_abbreviations.append(False)
-        return authors, is_abbreviations
+        entities = nlp(match.group(1)).ents
+        is_person = all(ent.label_ == 'PER' for ent in entities) and len(entities) > 0
+        if is_person:
+            authors.append(match.group(1))
+            is_abbreviations.append(False)
+            return authors, is_abbreviations
+        else:
+            return None, None
 
     # General case name without "Von" prefix, missing period or colon
     # in this case check if the last words are a name
@@ -416,23 +420,24 @@ def getAuthorString(article_text):
     return None, None
 
 def remove_obvious_noise(string):
-    #string = remove_email_addresses(string)
-    #string = remove_hyper_links(string)
+    string = remove_email_addresses(string)
+    string = remove_hyper_links(string)
+
+    # remove everything before the last occurrence of a digit
+    string = re.sub(r'^.*\d', '', string)
+
     return string
+
 
 def remove_email_addresses(string):
     # recognize hyperlinks
-    hyper_links = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', string)
-    for link in hyper_links:
-        string = string.replace(link, '')
-    return string.strip()
+    return re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b', '', string)
+
 
 def remove_hyper_links(string):
     # recognize hyperlinks
-    hyper_links = re.findall(r'\b(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]{2,}(?:\.[a-zA-Z]{2,}){1,}(?:\/[a-zA-Z0-9-]+)*(?:\.html)?', string)
-    for link in hyper_links:
-        string = string.replace(link, '')
-    return string.strip()
+    return re.sub(r'\b(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]{2,}(?:\.[a-zA-Z]{2,}){1,}(?:\/[a-zA-Z0-9-]+)*(?:\.html)?', '', string)
+
 
 def check_if_is_abbreviation(string):
     if ' ' in string:
