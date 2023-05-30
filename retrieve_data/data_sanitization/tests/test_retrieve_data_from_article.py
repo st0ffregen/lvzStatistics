@@ -486,7 +486,3 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
             ),
             retrieveDataFromArticle.get_author('Heimatforschung erhalten. O. Büchel/M.Orbeck')
         )
-
-
-
-

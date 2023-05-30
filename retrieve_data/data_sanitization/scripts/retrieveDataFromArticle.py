@@ -248,7 +248,7 @@ def getAuthorString(article_text):
     # Case 6.: No author given, texts ends with a period or colon
     match = regex.search(r'(?:\.|:)$', article_text)
     if match:
-        authors.append('LVZ')
+        authors.append("LVZ")
         is_abbreviations.append(True)
         return authors, is_abbreviations
 
@@ -437,20 +437,16 @@ def save_to_database(articles, logger):
             try:
                 updated_at = datetime.utcnow().isoformat()
 
-                if article.author_array is not None:
-                    article.author_array = str(article.author_array)
-
-                if article.author_is_abbreviation_array is not None:
-                    article.author_is_abbreviation_array = str(article.author_is_abbreviation_array)
-
-                if article.article_namespace_array is not None:
-                    article.article_namespace_array = str(article.article_namespace_array)
+                article.author_array = json.dumps(article.author_array)
+                article.author_is_abbreviation_array = json.dumps(article.author_is_abbreviation_array)
+                article.article_namespace_array = json.dumps(article.article_namespace_array)
 
                 cur.execute('insert into articles values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                             (None, article.url, article.context_tag, article.organization, article.author_array,
                              article.author_is_abbreviation_array,
                              article.genre, article.article_namespace_array, article.published_at, article.modified_at,
                              article.is_free, article.headline, article.text, updated_at, updated_at))
+
             except sqlite3.IntegrityError as e:
                 logger.warning(f'error for article {article.url} : {e}')
                 failed += 1
@@ -500,13 +496,13 @@ def aggregateData(article, logger):
 def main():
     logger = Logger('../logs/', 'retrieval', 'INFO').get_logger()
 
-    for l in range(0, 53):
+    for l in tqdm.tqdm(range(0, 53)):
         offset = l * 7000
         limit = 7000
         logger.info('start run from ' + str(offset) + ' to ' + str(offset + limit))
         articles = loadDownloadedData('../data/all_downloaded_articles.db', limit, offset)
         articles_for_db = []
-        for article in tqdm.tqdm(articles):
+        for article in articles:
             articles_for_db.append(aggregateData(article, logger))
 
         save_to_database(articles_for_db, logger)

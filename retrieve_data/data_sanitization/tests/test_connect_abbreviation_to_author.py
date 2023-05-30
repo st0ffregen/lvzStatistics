@@ -1,41 +1,43 @@
 from unittest import TestCase
 from unittest.mock import Mock
 import sqlite3
+from collections import defaultdict
+import json
 from ..scripts import connect_abbreviation_to_author
 
 class TestConnectAbbreviationToAuthor(TestCase):
 
     window_articles = [
-        {'id': 0, 'url': 'test', 'organization': 'lvz', 'author_array': '[\'Mark Daniel\']',
-                        'author_is_abbreviation': '[False]', 'published_at': '2010-01-01T00:00:00+00:00'},
-        {'id': 1, 'url': 'test', 'organization': 'lvz', 'author_array': '[\'Mark Daniel\', \'Hannah Suppa\']',
-                        'author_is_abbreviation': '[False, False]', 'published_at': '2010-02-01T00:00:00+00:00'},
-        {'id': 2, 'url': 'test', 'organization': 'lvz', 'author_array': '[\'Theresa Moosmann\', \'md\']',
-                        'author_is_abbreviation': '[False, True]', 'published_at': '2010-03-01T00:00:00+00:00'},
-        {'id': 3, 'url': 'test', 'organization': 'lvz', 'author_array': '[\'tm\', \'has\']',
-                        'author_is_abbreviation': '[True, True]', 'published_at': '2010-04-01T00:00:00+00:00'},
-        {'id': 4, 'url': 'test', 'organization': 'lvz', 'author_array': '[\'mad\', \'lvz\']',
-                        'author_is_abbreviation': '[True, True]', 'published_at': '2010-04-05T00:00:00+00:00'},
-        {'id': 5, 'url': 'test', 'organization': 'lvz', 'author_array': '[\'md\', \'tm\']',
-                        'author_is_abbreviation': '[True, True]', 'published_at': '2010-04-10T00:00:00+00:00'},
-        {'id': 6, 'url': 'test', 'organization': 'lvz', 'author_array': '[\'Tilmann Prüfer\']',
-                        'author_is_abbreviation': '[False]', 'published_at': '2010-04-20T00:00:00+00:00'},
-        {'id': 7, 'url': 'test', 'organization': 'lvz', 'author_array': '[\'Tim Meyer\']',
-                        'author_is_abbreviation': '[False]', 'published_at': '2010-04-30T00:00:00+00:00'},
-        {'id': 8, 'url': 'test', 'organization': 'lvz', 'author_array': '[\'Theresa Moosmann\']',
-                        'author_is_abbreviation': '[False]', 'published_at': '2010-05-01T00:00:00+00:00'},
-        {'id': 9, 'url': 'test', 'organization': 'lvz', 'author_array': '[\'lvz\']',
-                        'author_is_abbreviation': '[True]', 'published_at': '2010-05-10T00:00:00+00:00'},
-        {'id': 10, 'url': 'test', 'organization': 'lvz', 'author_array': '[\'Jan Armin-Döbeln\']',
-                        'author_is_abbreviation': '[False]', 'published_at': '2010-05-10T00:00:00+00:00'},
-        {'id': 11, 'url': 'test', 'organization': 'lvz', 'author_array': '[\'jad\']',
-                        'author_is_abbreviation': '[True]', 'published_at': '2010-05-10T00:00:00+00:00'},
+        {'id': 0, 'url': 'test', 'organization': 'lvz', 'author_array': ["Mark Daniel"],
+                        'author_is_abbreviation': [False], 'published_at': '2010-01-01T00:00:00+00:00'},
+        {'id': 1, 'url': 'test', 'organization': 'lvz', 'author_array': ["Mark Daniel", "Hannah Suppa"],
+                        'author_is_abbreviation': [False, False], 'published_at': '2010-02-01T00:00:00+00:00'},
+        {'id': 2, 'url': 'test', 'organization': 'lvz', 'author_array': ["Theresa Moosmann", "md"],
+                        'author_is_abbreviation': [False, True], 'published_at': '2010-03-01T00:00:00+00:00'},
+        {'id': 3, 'url': 'test', 'organization': 'lvz', 'author_array': ["tm", "has"],
+                        'author_is_abbreviation': [True, True], 'published_at': '2010-04-01T00:00:00+00:00'},
+        {'id': 4, 'url': 'test', 'organization': 'lvz', 'author_array': ["mad", "lvz"],
+                        'author_is_abbreviation': [True, True], 'published_at': '2010-04-05T00:00:00+00:00'},
+        {'id': 5, 'url': 'test', 'organization': 'lvz', 'author_array': ["md", "tm"],
+                        'author_is_abbreviation': [True, True], 'published_at': '2010-04-10T00:00:00+00:00'},
+        {'id': 6, 'url': 'test', 'organization': 'lvz', 'author_array': ["Tilmann Prüfer"],
+                        'author_is_abbreviation': [False], 'published_at': '2010-04-20T00:00:00+00:00'},
+        {'id': 7, 'url': 'test', 'organization': 'lvz', 'author_array': ["Tim Meyer"],
+                        'author_is_abbreviation': [False], 'published_at': '2010-04-30T00:00:00+00:00'},
+        {'id': 8, 'url': 'test', 'organization': 'lvz', 'author_array': ["Theresa Moosmann"],
+                        'author_is_abbreviation': [False], 'published_at': '2010-05-01T00:00:00+00:00'},
+        {'id': 9, 'url': 'test', 'organization': 'lvz', 'author_array': ["lvz"],
+                        'author_is_abbreviation': [True], 'published_at': '2010-05-10T00:00:00+00:00'},
+        {'id': 10, 'url': 'test', 'organization': 'lvz', 'author_array': ["Jan Armin-Döbeln"],
+                        'author_is_abbreviation': [False], 'published_at': '2010-05-10T00:00:00+00:00'},
+        {'id': 11, 'url': 'test', 'organization': 'lvz', 'author_array': ["jad"],
+                        'author_is_abbreviation': [True], 'published_at': '2010-05-10T00:00:00+00:00'},
     ]
 
-    authors_with_frequency = {
+    authors_with_frequency = defaultdict(int, {
         'mark daniel': 2, 'hannah suppa': 1, 'theresa moosmann': 2, 'tilmann prüfer': 1, 'tim meyer': 1,
         'jan armin-döbeln': 1
-    }
+    })
 
     def setUp(self):
         # Create a temporary in-memory SQLite database for testing
@@ -54,7 +56,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
         for article in self.window_articles:
             self.cur.execute(
                 'INSERT INTO articles (id, url, author_array, author_is_abbreviation, published_at, organization) VALUES (?, ?, ?, ?, ?, ?)',
-                (article['id'], article['url'], article['author_array'], article['author_is_abbreviation'],
+                (article['id'], article['url'], json.dumps(article['author_array']), json.dumps(article['author_is_abbreviation']),
                  article['published_at'], article['organization']))
 
         self.con.commit()
@@ -66,6 +68,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
     def test_match_author_to_abbreviation(self):
         connect_abbreviation_to_author.get_db_connection = Mock(return_value=(self.con, self.cur))
         connect_abbreviation_to_author.batch_size = 1
+        connect_abbreviation_to_author.database_batch_size = 1
 
         connect_abbreviation_to_author.match_author_to_abbreviation()
 
@@ -82,14 +85,14 @@ class TestConnectAbbreviationToAuthor(TestCase):
         self.assertFalse(self.window_articles[10]['id'] in article_ids)
 
         # check if the correct author was matched
-        self.assertTrue((2, eval(self.window_articles[2]['author_array'])[1]) in article_authors)
-        self.assertTrue((3, eval(self.window_articles[3]['author_array'])[0]) in article_authors)
-        self.assertTrue((3, eval(self.window_articles[3]['author_array'])[1]) in article_authors)
-        self.assertTrue((4, eval(self.window_articles[4]['author_array'])[0]) in article_authors)
-        self.assertTrue((4, eval(self.window_articles[4]['author_array'])[1]) in article_authors)
-        self.assertTrue((5, eval(self.window_articles[5]['author_array'])[0]) in article_authors)
-        self.assertTrue((5, eval(self.window_articles[5]['author_array'])[1]) in article_authors)
-        self.assertTrue((9, eval(self.window_articles[9]['author_array'])[0]) in article_authors)
+        self.assertTrue((2, self.window_articles[2]['author_array'][1]) in article_authors)
+        self.assertTrue((3, self.window_articles[3]['author_array'][0]) in article_authors)
+        self.assertTrue((3, self.window_articles[3]['author_array'][1]) in article_authors)
+        self.assertTrue((4, self.window_articles[4]['author_array'][0]) in article_authors)
+        self.assertTrue((4, self.window_articles[4]['author_array'][1]) in article_authors)
+        self.assertTrue((5, self.window_articles[5]['author_array'][0]) in article_authors)
+        self.assertTrue((5, self.window_articles[5]['author_array'][1]) in article_authors)
+        self.assertTrue((9, self.window_articles[9]['author_array'][0]) in article_authors)
 
         # check if authors got the right mapping to their abbreviation
         self.assertTrue(('mark daniel', 'md') in author_abbreviations)
@@ -142,7 +145,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
     def test_search_for_full_name_article_5(self):
         matches_for_focused_article = [
             {'abbreviation': 'md', 'author': 'mark daniel', 'certainty': 0.8},  # direct match
-            {'abbreviation': 'tm', 'author': 'theresa moosmann', 'certainty': 0.9}  # direct match
+            {'abbreviation': 'tm', 'author': 'theresa moosmann', 'certainty': 0.9},  # direct match
         ]
 
         result = connect_abbreviation_to_author.search_for_full_name(self.window_articles[5],
@@ -192,7 +195,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
         self.assertFalse(connect_abbreviation_to_author.at_least_one_author_is_abbreviated(self.window_articles[0]))
 
     def test_get_abbreviations(self):
-        author_abbreviations = ['tm', 'has']
+        author_abbreviations = {'tm', 'has'}
 
         result = connect_abbreviation_to_author.get_abbreviations(self.window_articles[3])
 

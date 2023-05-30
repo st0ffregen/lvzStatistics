@@ -4,6 +4,9 @@ from dateutil.relativedelta import relativedelta
 import tqdm
 import re
 import math
+from collections import Counter
+import json
+import cProfile
 
 # this scripts tries to connect the author to their abbreviation
 # from an abbreviation it attempts to find an author name similar to the abbreviation in a predefined time window
@@ -15,19 +18,17 @@ import math
 
 organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline']
 batch_size = 100  # TODO: check again, if this could be a problem when abbreviated articles are sparse. plot graph displaying the number of articles with abbreviations over time
-
+database_batch_size = 5000 # when to update the database
 
 def main():
     match_author_to_abbreviation()
 
 
-# TODO 29.05: tests schreiben für die klasse und dann nochmal alles durchlaufen lassen
-# dann full name authors in die db nachtragen und dann mit dem finalen mapping beginnen
+# TODO 30.05: dann full name authors in die db nachtragen und dann mit dem finalen mapping beginnen
 def match_author_to_abbreviation():
     con, cur = get_db_connection()
     months = 6
-    articles = get_articles_with_abbreviations(cur)
-    articles = articles[4758:]
+    articles = get_articles_with_abbreviations(cur)[3000:] # TODO: rausnehmen
     current_abbreviation_to_author_mapping = []
 
     window_articles = get_article_window(cur, articles[0], months=months)
@@ -45,9 +46,11 @@ def match_author_to_abbreviation():
             break
 
         if idx > 0 and idx % batch_size == 0:
+            window_articles = get_article_window(cur, article, months=months)
+
+        if idx > 0 and idx % database_batch_size == 0:
             save_matches_to_db(con, cur, current_abbreviation_to_author_mapping)
             current_abbreviation_to_author_mapping = []
-            window_articles = get_article_window(cur, article, months=months)
 
 
 def save_matches_to_db(con, cur, current_abbreviation_to_author_mapping):
@@ -60,7 +63,6 @@ def save_matches_to_db(con, cur, current_abbreviation_to_author_mapping):
                     (None, abbreviation_to_author['article_id'], cur.lastrowid, updated_at, updated_at))
     con.commit()
 
-
 def add_article_id(focused_article, matches):
     # add focused_article id to every element in matches dict
     for match in matches:
@@ -68,17 +70,17 @@ def add_article_id(focused_article, matches):
 
 
 def get_articles_with_abbreviations(cur):
-    cur.execute('select id, url, author_array, author_is_abbreviation, published_at from articles where organization = "lvz" and author_is_abbreviation is not null and author_is_abbreviation like "%True%" order by published_at asc')
+    cur.execute('select id, author_array, author_is_abbreviation, published_at from articles where organization = "lvz" and author_is_abbreviation is not null and author_is_abbreviation like "%True%" order by published_at asc')
     rows = cur.fetchall()
+
     articles = []
 
     for row in rows:
         row_dict = {
             'id': row[0],
-            'url': row[1],
-            'author_array': row[2],
-            'author_is_abbreviation': row[3],
-            'published_at': row[4]
+            'author_array': json.loads(row[1]),
+            'author_is_abbreviation': json.loads(row[2]),
+            'published_at': row[3]
         }
         articles.append(row_dict)
 
@@ -91,28 +93,33 @@ def get_db_connection():
     return con, cur
 
 
-def get_authors_with_frequency(window_articles):
-    authors_with_frequency = {}
-    for article in window_articles:
+def get_authors_with_frequency(articles):
+    authors_with_frequency = Counter()
+    abbreviations = set()
+
+    for article in articles:
         if article['author_array'] is None:
             continue
 
-        authors = []
-        for idx, author in enumerate(eval(article['author_array'])):
-            if eval(article['author_is_abbreviation'])[idx] is False:
-                authors.append(author.lower().strip())
+        abbreviations.update(
+            author.lower().strip()
+            for author, is_abbreviation in zip(article['author_array'], article['author_is_abbreviation'])
+            if is_abbreviation
+        )
+        authors = [
+            author.lower().strip()
+            for author, is_abbreviation in zip(article['author_array'], article['author_is_abbreviation'])
+            if not is_abbreviation
+        ]
+        authors_with_frequency.update(authors)
 
-        for author in authors:
-            if author not in authors_with_frequency.keys():
-                authors_with_frequency[author] = 1
-            else:
-                authors_with_frequency[author] += 1
+    del authors_with_frequency['']  # Remove empty author if present
 
     return authors_with_frequency
 
 
 def at_least_one_author_is_abbreviated(focused_article):
-    return any(eval(focused_article['author_is_abbreviation']))
+    return any(focused_article['author_is_abbreviation'])
 
 
 def all_abbreviations_have_a_match(author_abbreviations, matches):
@@ -121,7 +128,7 @@ def all_abbreviations_have_a_match(author_abbreviations, matches):
 
 
 def at_least_one_author_is_an_organization(focused_article):
-    return any([author.lower() in organizations for author in eval(focused_article['author_array'])])
+    return any([author.lower() in organizations for author in focused_article['author_array']])
 
 
 def search_for_full_name(focused_article, all_authors):
@@ -141,8 +148,8 @@ def search_for_full_name(focused_article, all_authors):
         if len(remaining_authors) == 0:
             return direct_matches
         else:
-            focused_article['author_array'] = str(remaining_authors)
-            focused_article['author_is_abbreviation'] = str(remaining_author_is_abbreviation)
+            focused_article['author_array'] = remaining_authors
+            focused_article['author_is_abbreviation'] = remaining_author_is_abbreviation
 
     author_abbreviations = get_abbreviations(focused_article)
 
@@ -151,7 +158,7 @@ def search_for_full_name(focused_article, all_authors):
     find_direct_matches(all_authors, author_abbreviations, direct_matches)
 
     # remove abbreviations that have a direct match
-    author_abbreviations = [author_abbreviation for author_abbreviation in author_abbreviations if author_abbreviation not in [match['abbreviation'] for match in direct_matches]]
+    author_abbreviations = {author_abbreviation for author_abbreviation in author_abbreviations if author_abbreviation not in [match['abbreviation'] for match in direct_matches]}
 
     if len(author_abbreviations) == 0:
         return direct_matches
@@ -312,21 +319,21 @@ def add_frequency_based_certainty_for_direct_matches(matches):
 
 def prepare_all_authors_dict(all_authors_with_frequency):
     for author, frequency in all_authors_with_frequency.items():
-        author_abbreviation = ''.join([first_char[0] for first_char in re.split(r' |-', author)])
+        author_abbreviation = ''.join([first_char[0] for first_char in re.split(r' |-', author) if first_char != ''])
         all_authors_with_frequency[author] = {'frequency': frequency, 'naive_abbreviation': author_abbreviation}
 
 
 def get_abbreviations(focused_article):
-    author_abbreviations = []
-    for idx, author in enumerate(eval(focused_article['author_array'])):
-        if eval(focused_article['author_is_abbreviation'])[idx]:
-            author_abbreviations.append(author.lower().replace('.', ''))
+    author_abbreviations = set()
+    for idx, author in enumerate(focused_article['author_array']):
+        if focused_article['author_is_abbreviation'][idx]:
+            author_abbreviations.add(author.lower().replace('.', ''))
 
     return author_abbreviations
 
 
 def add_organization_matches(direct_matches, focused_article):
-    author_array = eval(focused_article['author_array'])
+    author_array = focused_article['author_array']
     remaining_authors = []
     remaining_author_is_abbreviation = []
 
@@ -336,7 +343,7 @@ def add_organization_matches(direct_matches, focused_article):
         else:
             remaining_authors.append(author)
             remaining_author_is_abbreviation.append(
-                eval(focused_article['author_is_abbreviation'])[author_array.index(author)])
+                focused_article['author_is_abbreviation'][author_array.index(author)])
 
     return remaining_author_is_abbreviation, remaining_authors
 
@@ -352,7 +359,7 @@ def get_succeeding_focused_article(articles_in_window, focused_article):
 
         next_article = articles_in_window[next_index]
 
-        if next_article['author_is_abbreviation'] is not None and any(eval(next_article['author_is_abbreviation'])):
+        if next_article['author_is_abbreviation'] is not None and any(next_article['author_is_abbreviation']):
             return next_article
 
         next_index += 1
@@ -365,19 +372,12 @@ def get_article_window(cur, focused_article, months=6):
     upper_date_limit = (article_date + relativedelta(months=months)).isoformat()
 
     cur.execute(
-        'select id, url, author_array, author_is_abbreviation, published_at from articles where organization == "lvz" and published_at >= "' + lower_date_limit + '" and published_at <= "' + upper_date_limit + '" order by published_at asc')
+        'select id, author_array, author_is_abbreviation, published_at from articles where organization == "lvz" and published_at >= ? and published_at <= ? order by published_at asc', (lower_date_limit, upper_date_limit))
     fetched_articles = cur.fetchall()
-    article_window = [{'id': article[0], 'url': article[1], 'author_array': article[2], 'author_is_abbreviation': article[3], 'published_at': article[4]} for article in fetched_articles]
+    article_window = [{'id': article[0], 'author_array': json.loads(article[1]), 'author_is_abbreviation': json.loads(article[2]), 'published_at': article[3]} for article in fetched_articles]
+
     return article_window
 
-
-def get_oldest_article(cur):
-    cur.execute(
-        'select id, url, author_array, author_is_abbreviation, published_at from articles where organization == "lvz" and author_is_abbreviation is not null and author_is_abbreviation like "%True%" order by published_at asc limit 1')
-    next_fetched_article = cur.fetchone()
-    next_article = {'id': next_fetched_article[0], 'url': next_fetched_article[1], 'author_array': next_fetched_article[2],
-                    'author_is_abbreviation': next_fetched_article[3], 'published_at': next_fetched_article[4]}
-    return next_article
 
 
 if __name__ == '__main__':
