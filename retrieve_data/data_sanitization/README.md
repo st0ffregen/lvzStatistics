@@ -27,6 +27,8 @@
       * ein artikel mit nem full name soll dann auf all diese rows mappen (artikel mit abbrs können 1:m mappen)
   * evtl. pro abbr die top 1-3 autoren nehmen und dann sodoku mäßig vergleichen
   * fehlererkennung: wie viele distinct abbrs gibt es mehr als distinct authors (kann natürlich auch sein, dass es tat. mehr abbrs als 1 pro autor gibt, aber das ist wahrscheinlich die minderheit)
+  * alle full names in die db schreiben, auf einen entry der authors table mappen
+  * dann auswahl welche abbr, name pairs bleiben sollen und alle einträge der article_authors tabelle entsprechend umbiegen 
 
 # other
 * analyzeDataAndMoveToElastic.log can probably be removed
