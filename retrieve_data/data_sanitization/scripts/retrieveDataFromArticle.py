@@ -16,7 +16,7 @@ punctuation_blocklist = ['»', '-', '“', '*', '"', '“']
 punctuation_blocklist_keep_whitespace = [' -', '  ', '“ ', ' „', '" ', '“ ']
 inner_punctuation_blocklist = [u'\xa0', u'\xc2']
 organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline']
-re_name = r'((?:[\p{L}]+|\p{L}\.)(?:\s|-)(?:[\p{L}]+|\p{L}\.)(?:\s|-)?(?:[\p{L}]*|\p{L}\.))'
+re_name = r'((?:[\p{L}]+|\p{L}\.)(?:\s|-)(?:[\p{L}]+|\p{L}\.)(?:(?:\s|-)[\p{L}]*|\p{L}\.)?)'
 
 success = 0
 failed = 0
@@ -119,6 +119,7 @@ def get_author(article_text):
         return None, None
 
     authors, is_abbreviation = remove_empty_strings(authors, is_abbreviations)
+    authors, is_abbreviation = remove_duplicates(authors, is_abbreviation)
 
     return authors, is_abbreviation
 
@@ -130,6 +131,11 @@ def remove_empty_strings(authors, is_abbreviation):
 
     return authors, is_abbreviation
 
+def remove_duplicates(authors, is_abbreviation):
+    if len(authors) != len(set(authors)):
+        authors, is_abbreviation = [list(el) for el in zip(*set(zip(authors, is_abbreviation)))]
+
+    return authors, is_abbreviation
 
 def handle_special_cases(article_text):
     # Case 5: Editorial abbreviation
@@ -161,11 +167,20 @@ def remove_special_cases_from_text(article_text):
         article_text = article_text.replace('(' + match.group(1) + ')', '')
         article_text = article_text.strip()
 
-    match = regex.search(r'.*\sInterview:\s.*$', article_text, flags=re.UNICODE)
-    if match:
-        article_text = article_text.replace('Interview:', 'Von')
+    article_text = replace_keywords(article_text, r'.*\s(Interview:)\s.*$')
+    article_text = replace_keywords(article_text, r'.*\s(\d{1,2}\.\d{1,2}\.\d{2,4})\s.*$')
+    article_text = replace_keywords(article_text, r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b')
+    article_text = replace_keywords(article_text, r'\b(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]{2,}(?:\.[a-zA-Z]{2,}){1,}(?:\/[a-zA-Z0-9-]+)*(?:\.html)?')
 
     return article_text, authors, is_abbreviations
+
+
+def replace_keywords(article_text, reg):
+    match = regex.search(reg, article_text, flags=re.UNICODE)
+    if match:
+        article_text = article_text.replace(match.group(1) if len(match.groups()) > 0 else match.captures()[0], 'Von') # TODO: groups und capture unterschied checken
+    return article_text
+
 
 def getAuthorString(article_text):
     article_text = article_text[-100:]
@@ -222,7 +237,7 @@ def getAuthorString(article_text):
         return authors, is_abbreviations
 
     # Case 4.1/7???: Mix of full names and or multiple abbreviations without "Von" prefix, separated by a slash
-    match = regex.search(r'(?:\.|:)\s(?!Von\s)(.*\/.*)+$', article_text, flags=re.UNICODE)
+    match = regex.search(rf'(?:\.|:)\s(?!Von\s)((?:-?\w{{2,6}}|{re_name})\/(?:-?\w{{2,6}}|{re_name}))+$', article_text, flags=re.UNICODE)
     if match:
         splits = re.split(r'\s*/\s*', match.group(1))
 
@@ -230,7 +245,11 @@ def getAuthorString(article_text):
         for split in splits:
             authors.append(remove_outer_unwanted_punctuation(split))
             if ' ' in split:
-                is_person = nlp(split)[0].ent_type_ == 'PER'
+                entities = nlp(split).ents
+                is_person = all(ent.label_ == 'PER' for ent in entities) and len(entities) > 0
+
+                if is_person is False:
+                    return None, None
                 is_abbreviations.append(is_person is False)
             elif len(split) < 2 or len(split) > 6:
                 return None, None
@@ -346,11 +365,11 @@ def getAuthorString(article_text):
     if match:
         names = []
         for group in match.groups():
-            doc = nlp(group)
 
-            for ent in doc.ents:
-                if ent.label_ == 'PER':
-                    names.append(ent.text)
+            entities = nlp(group).ents
+            is_person = all(ent.label_ == 'PER' for ent in entities) and len(entities) > 0
+            if is_person:
+                names.append(entities[0].lemma_)
 
         if names:
             authors.extend(names)
@@ -385,7 +404,10 @@ def getAuthorString(article_text):
     # include up to two name parts given that no middle names exists
     last_elements = [' '.join(re.split(r' |/', article_text)[-4:-2]), ' '.join(re.split(r' |/', article_text)[-2:])]
     for element in last_elements:
-        if element != '' and nlp(element)[0].ent_type_ == 'PER':
+        entities = nlp(element).ents
+        is_person = all(ent.label_ == 'PER' for ent in entities) and len(entities) > 0
+        # check if it matches regex re_name
+        if element != '' and is_person and regex.match(rf'^{re_name}$', element):
             authors.append(element)
             is_abbreviations.append(False)
     if authors:
@@ -394,8 +416,8 @@ def getAuthorString(article_text):
     return None, None
 
 def remove_obvious_noise(string):
-    string = remove_email_addresses(string)
-    string = remove_hyper_links(string)
+    #string = remove_email_addresses(string)
+    #string = remove_hyper_links(string)
     return string
 
 def remove_email_addresses(string):

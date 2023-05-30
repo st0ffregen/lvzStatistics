@@ -6,7 +6,6 @@ import re
 import math
 from collections import Counter
 import json
-import cProfile
 
 # this scripts tries to connect the author to their abbreviation
 # from an abbreviation it attempts to find an author name similar to the abbreviation in a predefined time window
@@ -23,12 +22,13 @@ database_batch_size = 5000 # when to update the database
 def main():
     match_author_to_abbreviation()
 
-
+# TODO: 01.06: nochmal in die db mit select id, name from authors group by name schauen und Schrott behandeln
+# gerade auch mal select id, name, count(*) as count from authors group by name having count > 10 schauen und die wirklich relevanten sachen behandeln
 # TODO 30.05: dann full name authors in die db nachtragen und dann mit dem finalen mapping beginnen
 def match_author_to_abbreviation():
     con, cur = get_db_connection()
     months = 6
-    articles = get_articles_with_abbreviations(cur)[3000:] # TODO: rausnehmen
+    articles = get_articles_with_abbreviations(cur)
     current_abbreviation_to_author_mapping = []
 
     window_articles = get_article_window(cur, articles[0], months=months)
@@ -63,10 +63,10 @@ def save_matches_to_db(con, cur, current_abbreviation_to_author_mapping):
                     (None, abbreviation_to_author['article_id'], cur.lastrowid, updated_at, updated_at))
     con.commit()
 
-def add_article_id(focused_article, matches):
+def add_article_id(article, matches):
     # add focused_article id to every element in matches dict
     for match in matches:
-        match['article_id'] = focused_article['id']
+        match['article_id'] = article['id']
 
 
 def get_articles_with_abbreviations(cur):

@@ -3,36 +3,13 @@ from unittest.mock import Mock
 import sqlite3
 from collections import defaultdict
 import json
+import sys
+from ..tests import test_data
 from ..scripts import connect_abbreviation_to_author
 
 class TestConnectAbbreviationToAuthor(TestCase):
 
-    window_articles = [
-        {'id': 0, 'url': 'test', 'organization': 'lvz', 'author_array': ["Mark Daniel"],
-                        'author_is_abbreviation': [False], 'published_at': '2010-01-01T00:00:00+00:00'},
-        {'id': 1, 'url': 'test', 'organization': 'lvz', 'author_array': ["Mark Daniel", "Hannah Suppa"],
-                        'author_is_abbreviation': [False, False], 'published_at': '2010-02-01T00:00:00+00:00'},
-        {'id': 2, 'url': 'test', 'organization': 'lvz', 'author_array': ["Theresa Moosmann", "md"],
-                        'author_is_abbreviation': [False, True], 'published_at': '2010-03-01T00:00:00+00:00'},
-        {'id': 3, 'url': 'test', 'organization': 'lvz', 'author_array': ["tm", "has"],
-                        'author_is_abbreviation': [True, True], 'published_at': '2010-04-01T00:00:00+00:00'},
-        {'id': 4, 'url': 'test', 'organization': 'lvz', 'author_array': ["mad", "lvz"],
-                        'author_is_abbreviation': [True, True], 'published_at': '2010-04-05T00:00:00+00:00'},
-        {'id': 5, 'url': 'test', 'organization': 'lvz', 'author_array': ["md", "tm"],
-                        'author_is_abbreviation': [True, True], 'published_at': '2010-04-10T00:00:00+00:00'},
-        {'id': 6, 'url': 'test', 'organization': 'lvz', 'author_array': ["Tilmann Prüfer"],
-                        'author_is_abbreviation': [False], 'published_at': '2010-04-20T00:00:00+00:00'},
-        {'id': 7, 'url': 'test', 'organization': 'lvz', 'author_array': ["Tim Meyer"],
-                        'author_is_abbreviation': [False], 'published_at': '2010-04-30T00:00:00+00:00'},
-        {'id': 8, 'url': 'test', 'organization': 'lvz', 'author_array': ["Theresa Moosmann"],
-                        'author_is_abbreviation': [False], 'published_at': '2010-05-01T00:00:00+00:00'},
-        {'id': 9, 'url': 'test', 'organization': 'lvz', 'author_array': ["lvz"],
-                        'author_is_abbreviation': [True], 'published_at': '2010-05-10T00:00:00+00:00'},
-        {'id': 10, 'url': 'test', 'organization': 'lvz', 'author_array': ["Jan Armin-Döbeln"],
-                        'author_is_abbreviation': [False], 'published_at': '2010-05-10T00:00:00+00:00'},
-        {'id': 11, 'url': 'test', 'organization': 'lvz', 'author_array': ["jad"],
-                        'author_is_abbreviation': [True], 'published_at': '2010-05-10T00:00:00+00:00'},
-    ]
+    articles = test_data.articles
 
     authors_with_frequency = defaultdict(int, {
         'mark daniel': 2, 'hannah suppa': 1, 'theresa moosmann': 2, 'tilmann prüfer': 1, 'tim meyer': 1,
@@ -53,7 +30,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
             'CREATE TABLE "article_authors" ( "id" INTEGER NOT NULL UNIQUE, "article_id" INTEGER NOT NULL, "author_id" INTEGER NOT NULL, "created_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL, UNIQUE("article_id","author_id"), PRIMARY KEY("id" AUTOINCREMENT))')
         self.con.commit()
 
-        for article in self.window_articles:
+        for article in self.articles:
             self.cur.execute(
                 'INSERT INTO articles (id, url, author_array, author_is_abbreviation, published_at, organization) VALUES (?, ?, ?, ?, ?, ?)',
                 (article['id'], article['url'], json.dumps(article['author_array']), json.dumps(article['author_is_abbreviation']),
@@ -77,22 +54,22 @@ class TestConnectAbbreviationToAuthor(TestCase):
         article_ids = [row[0] for row in article_authors]
 
         # articles without entries because they have abbreviations
-        self.assertFalse(self.window_articles[0]['id'] in article_ids)
-        self.assertFalse(self.window_articles[1]['id'] in article_ids)
-        self.assertFalse(self.window_articles[6]['id'] in article_ids)
-        self.assertFalse(self.window_articles[7]['id'] in article_ids)
-        self.assertFalse(self.window_articles[8]['id'] in article_ids)
-        self.assertFalse(self.window_articles[10]['id'] in article_ids)
+        self.assertFalse(self.articles[0]['id'] in article_ids)
+        self.assertFalse(self.articles[1]['id'] in article_ids)
+        self.assertFalse(self.articles[6]['id'] in article_ids)
+        self.assertFalse(self.articles[7]['id'] in article_ids)
+        self.assertFalse(self.articles[8]['id'] in article_ids)
+        self.assertFalse(self.articles[10]['id'] in article_ids)
 
         # check if the correct author was matched
-        self.assertTrue((2, self.window_articles[2]['author_array'][1]) in article_authors)
-        self.assertTrue((3, self.window_articles[3]['author_array'][0]) in article_authors)
-        self.assertTrue((3, self.window_articles[3]['author_array'][1]) in article_authors)
-        self.assertTrue((4, self.window_articles[4]['author_array'][0]) in article_authors)
-        self.assertTrue((4, self.window_articles[4]['author_array'][1]) in article_authors)
-        self.assertTrue((5, self.window_articles[5]['author_array'][0]) in article_authors)
-        self.assertTrue((5, self.window_articles[5]['author_array'][1]) in article_authors)
-        self.assertTrue((9, self.window_articles[9]['author_array'][0]) in article_authors)
+        self.assertTrue((2, self.articles[2]['author_array'][1]) in article_authors)
+        self.assertTrue((3, self.articles[3]['author_array'][0]) in article_authors)
+        self.assertTrue((3, self.articles[3]['author_array'][1]) in article_authors)
+        self.assertTrue((4, self.articles[4]['author_array'][0]) in article_authors)
+        self.assertTrue((4, self.articles[4]['author_array'][1]) in article_authors)
+        self.assertTrue((5, self.articles[5]['author_array'][0]) in article_authors)
+        self.assertTrue((5, self.articles[5]['author_array'][1]) in article_authors)
+        self.assertTrue((9, self.articles[9]['author_array'][0]) in article_authors)
 
         # check if authors got the right mapping to their abbreviation
         self.assertTrue(('mark daniel', 'md') in author_abbreviations)
@@ -103,12 +80,12 @@ class TestConnectAbbreviationToAuthor(TestCase):
         self.assertTrue(('lvz', 'lvz') in author_abbreviations)
 
     def test_search_for_full_name_article_0(self):
-        result = connect_abbreviation_to_author.search_for_full_name(self.window_articles[0], self.authors_with_frequency)
+        result = connect_abbreviation_to_author.search_for_full_name(self.articles[0], self.authors_with_frequency)
 
         self.assertEqual(None, result)
 
     def test_search_for_full_name_article_1(self):
-        result = connect_abbreviation_to_author.search_for_full_name(self.window_articles[1], self.authors_with_frequency)
+        result = connect_abbreviation_to_author.search_for_full_name(self.articles[1], self.authors_with_frequency)
 
         self.assertEqual(None, result)
 
@@ -117,7 +94,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
             {'abbreviation': 'md', 'author': 'mark daniel', 'certainty': 0.8}  # direct match
         ]
 
-        result = connect_abbreviation_to_author.search_for_full_name(self.window_articles[2], self.authors_with_frequency)
+        result = connect_abbreviation_to_author.search_for_full_name(self.articles[2], self.authors_with_frequency)
 
         self.assertEqual(matches_for_focused_article, result)
 
@@ -127,7 +104,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
             {'abbreviation': 'has', 'author': 'hannah suppa', 'certainty': 0.6}  # direct match
         ]
 
-        result = connect_abbreviation_to_author.search_for_full_name(self.window_articles[3], self.authors_with_frequency)
+        result = connect_abbreviation_to_author.search_for_full_name(self.articles[3], self.authors_with_frequency)
 
         self.assertEqual(matches_for_focused_article, result)
 
@@ -137,7 +114,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
             {'abbreviation': 'mad', 'author': 'mark daniel', 'certainty': 0.9}  # fuzzy match
         ]
 
-        result = connect_abbreviation_to_author.search_for_full_name(self.window_articles[4],
+        result = connect_abbreviation_to_author.search_for_full_name(self.articles[4],
                                                                      self.authors_with_frequency)
 
         self.assertEqual(matches_for_focused_article, result)
@@ -148,7 +125,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
             {'abbreviation': 'tm', 'author': 'theresa moosmann', 'certainty': 0.9},  # direct match
         ]
 
-        result = connect_abbreviation_to_author.search_for_full_name(self.window_articles[5],
+        result = connect_abbreviation_to_author.search_for_full_name(self.articles[5],
                                                                      self.authors_with_frequency)
 
         self.assertEqual(matches_for_focused_article, result)
@@ -158,7 +135,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
             {'abbreviation': 'lvz', 'author': 'lvz', 'certainty': 1},  # direct organization match
         ]
 
-        result = connect_abbreviation_to_author.search_for_full_name(self.window_articles[9],
+        result = connect_abbreviation_to_author.search_for_full_name(self.articles[9],
                                                                      self.authors_with_frequency)
 
         self.assertEqual(matches_for_focused_article, result)
@@ -168,13 +145,13 @@ class TestConnectAbbreviationToAuthor(TestCase):
             {'abbreviation': 'jad', 'author': 'jan armin-döbeln', 'certainty': 0.8},  # direct match
         ]
 
-        result = connect_abbreviation_to_author.search_for_full_name(self.window_articles[11],
+        result = connect_abbreviation_to_author.search_for_full_name(self.articles[11],
                                                                      self.authors_with_frequency)
 
         self.assertEqual(matches_for_focused_article, result)
 
     def test_add_article_id(self):
-        focused_article = self.window_articles[0]
+        focused_article = self.articles[0]
         matches = [{'abbreviation': 'test', 'author': 'author_0', 'certainty': 0}]
 
         connect_abbreviation_to_author.add_article_id(focused_article, matches)
@@ -182,22 +159,22 @@ class TestConnectAbbreviationToAuthor(TestCase):
         self.assertEqual(0, matches[0]['article_id'])
 
     def test_get_authors_with_frequency(self):
-        authors_with_frequency = connect_abbreviation_to_author.get_authors_with_frequency(self.window_articles)
+        authors_with_frequency = connect_abbreviation_to_author.get_authors_with_frequency(self.articles)
 
         self.assertEqual(self.authors_with_frequency, authors_with_frequency)
 
     def test_at_least_one_author_is_abbreviated(self):
-        self.assertTrue(connect_abbreviation_to_author.at_least_one_author_is_abbreviated(self.window_articles[2]))
-        self.assertFalse(connect_abbreviation_to_author.at_least_one_author_is_abbreviated(self.window_articles[0]))
+        self.assertTrue(connect_abbreviation_to_author.at_least_one_author_is_abbreviated(self.articles[2]))
+        self.assertFalse(connect_abbreviation_to_author.at_least_one_author_is_abbreviated(self.articles[0]))
 
     def test_at_least_one_author_is_an_organization(self):
-        self.assertTrue(connect_abbreviation_to_author.at_least_one_author_is_abbreviated(self.window_articles[4]))
-        self.assertFalse(connect_abbreviation_to_author.at_least_one_author_is_abbreviated(self.window_articles[0]))
+        self.assertTrue(connect_abbreviation_to_author.at_least_one_author_is_abbreviated(self.articles[4]))
+        self.assertFalse(connect_abbreviation_to_author.at_least_one_author_is_abbreviated(self.articles[0]))
 
     def test_get_abbreviations(self):
         author_abbreviations = {'tm', 'has'}
 
-        result = connect_abbreviation_to_author.get_abbreviations(self.window_articles[3])
+        result = connect_abbreviation_to_author.get_abbreviations(self.articles[3])
 
         self.assertEqual(author_abbreviations, result)
 
@@ -207,7 +184,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
         expected_result_remaining_authors = ['mad']
 
         direct_matches = []
-        result_remaining_author_is_abbreviation, result_remaining_authors = connect_abbreviation_to_author.add_organization_matches(direct_matches, self.window_articles[4])
+        result_remaining_author_is_abbreviation, result_remaining_authors = connect_abbreviation_to_author.add_organization_matches(direct_matches, self.articles[4])
 
         self.assertEqual(expected_result_remaining_author_is_abbreviation, result_remaining_author_is_abbreviation)
         self.assertEqual(expected_result_remaining_authors, result_remaining_authors)

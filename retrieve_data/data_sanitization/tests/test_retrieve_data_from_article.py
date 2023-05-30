@@ -307,7 +307,7 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
 
     def test_get_author_string_mix_of_abbreviations_and_full_names_without_von_and_slash(self):
         # Case 4.3/7
-        # Mix of abbreviations and full names, separated by a slash and "Von " prefix
+        # Mix of abbreviations and full names, separated by a slash without "Von " prefix
         self.assertEqual(
             (
                 ['lyn', 'Thomas Klein'],
@@ -321,6 +321,13 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 [False, True]
             ),
             retrieveDataFromArticle.get_author('werden, LVZ-Online schaltet einen Live-Ticker. Thomas Klein/lyn')
+        )
+        self.assertEqual(
+            (
+                ['joka', 'nöß'],
+                [True, True]
+            ),
+            retrieveDataFromArticle.get_author('Angaben. „Vieles ist derzeit noch unklar“, erklärte Braunsdorf. Der Polizist blieb unverletzt. joka/nöß')
         )
 
     def test_get_author_string_mix_of_abbreviations_and_full_names_with_von_comma(self):
@@ -459,6 +466,24 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
             retrieveDataFromArticle.get_author('Bundesligaspiele. Wir sind doch Vollprofis. Interview: Matthias Roth')
         )
 
+    def test_get_author_replace_date_with_von_keyword(self):
+        self.assertEqual(
+            (
+                ['kr', 'TJ'],
+                [True, True]
+            ),
+            retrieveDataFromArticle.get_author('macht nicht nur sie sich weiterhin Sorgen. Aus der Leipziger Volkszeitung vom 23.09.2014 kr/T.J')
+        )
+
+    def test_get_author_double_author_naming(self):
+        self.assertEqual(
+            (
+                ['Steffen Brost'],
+                [False]
+            ),
+            retrieveDataFromArticle.get_author(' und uns mit Michel auf die Schulzeit freuen\". Steffen Brost Steffen Brost')
+        )
+
     def test_get_author_string_return_null(self):
         self.assertEqual(
             (
@@ -485,4 +510,14 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
                 None, None
             ),
             retrieveDataFromArticle.get_author('Heimatforschung erhalten. O. Büchel/M.Orbeck')
+        )
+
+    def test_half_positive_edge_cases(self):
+        # cases that get an author assigned but are not 100% correct
+        self.assertEqual(
+            (
+                ['Reinhard Rädler'],
+                [False]
+            ),
+            retrieveDataFromArticle.get_author('dieser neuen Bilder statt. Reinhard Rädler / Olaf Barth Aus der Leipziger Volkszeitung vom 22.05.2013 Reinhard Rädler')
         )
