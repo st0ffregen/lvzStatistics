@@ -15,7 +15,7 @@ import json
 # in both cases we accept the match if it is unique
 # the script then adds the author and abbreviation to the author table
 
-organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline']
+organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline'] + ['daz', 'oaz', 'ovz'] # second are regional newspaper belonging to the LVZ
 batch_size = 100  # TODO: check again, if this could be a problem when abbreviated articles are sparse. plot graph displaying the number of articles with abbreviations over time
 database_batch_size = 5000 # when to update the database
 
@@ -56,9 +56,10 @@ def match_author_to_abbreviation():
 def save_matches_to_db(con, cur, current_abbreviation_to_author_mapping):
     for abbreviation_to_author in current_abbreviation_to_author_mapping:
         updated_at = datetime.utcnow().isoformat()
+        certainty = round(abbreviation_to_author['certainty'], 3) if abbreviation_to_author['certainty'] is not None else None
         cur.execute('insert into authors values (?,?,?,?,?,?)',
                     (None, abbreviation_to_author['author'], abbreviation_to_author['abbreviation'],
-                     round(abbreviation_to_author['certainty'], 3), updated_at, updated_at))
+                     certainty, updated_at, updated_at))
         cur.execute('insert into article_authors values (?,?,?,?,?)',
                     (None, abbreviation_to_author['article_id'], cur.lastrowid, updated_at, updated_at))
     con.commit()
@@ -70,7 +71,7 @@ def add_article_id(article, matches):
 
 
 def get_articles_with_abbreviations(cur):
-    cur.execute('select id, author_array, author_is_abbreviation, published_at from articles where organization = "lvz" and author_is_abbreviation is not null and author_is_abbreviation like "%True%" order by published_at asc')
+    cur.execute('select id, author_array, author_is_abbreviation, published_at from articles where organization = "lvz" and author_is_abbreviation is not null and author_is_abbreviation like "%true%" order by published_at asc')
     rows = cur.fetchall()
 
     articles = []
@@ -165,7 +166,14 @@ def search_for_full_name(focused_article, all_authors):
 
     fuzzy_matches = find_fuzzy_matches(all_authors, author_abbreviations)
 
-    result = direct_matches + fuzzy_matches
+    # remove abbreviations that have a fuzzy match
+    author_abbreviations = {author_abbreviation for author_abbreviation in author_abbreviations if
+                            author_abbreviation not in [match['abbreviation'] for match in fuzzy_matches]}
+
+    if len(author_abbreviations) > 0:
+        result = [{'abbreviation': abbreviation, 'author': None, 'frequency': None, 'certainty': None} for abbreviation in author_abbreviations]
+    else:
+        result = direct_matches + fuzzy_matches
 
     return result
 

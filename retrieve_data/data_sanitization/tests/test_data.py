@@ -23,4 +23,6 @@ articles = [
      'author_is_abbreviation': [False], 'published_at': '2010-05-10T00:00:00+00:00'},
     {'id': 11, 'url': 'test', 'organization': 'lvz', 'author_array': ["jad"],
      'author_is_abbreviation': [True], 'published_at': '2010-05-10T00:00:00+00:00'},
+    {'id': 12, 'url': 'test', 'organization': 'lvz', 'author_array': ["qxy"],
+     'author_is_abbreviation': [True], 'published_at': '2010-05-10T00:00:00+00:00'},
 ]

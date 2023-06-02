@@ -1,7 +1,7 @@
 from unittest import TestCase
 from unittest.mock import Mock
 import sqlite3
-from collections import defaultdict
+from collections import defaultdict, Counter
 import json
 import sys
 from ..tests import test_data
@@ -53,7 +53,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
         author_abbreviations = self.cur.execute('select name, abbreviation from authors').fetchall()
         article_ids = [row[0] for row in article_authors]
 
-        # articles without entries because they have abbreviations
+        # articles with entries because they have abbreviations
         self.assertFalse(self.articles[0]['id'] in article_ids)
         self.assertFalse(self.articles[1]['id'] in article_ids)
         self.assertFalse(self.articles[6]['id'] in article_ids)
@@ -70,6 +70,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
         self.assertTrue((5, self.articles[5]['author_array'][0]) in article_authors)
         self.assertTrue((5, self.articles[5]['author_array'][1]) in article_authors)
         self.assertTrue((9, self.articles[9]['author_array'][0]) in article_authors)
+        self.assertTrue((12, self.articles[12]['author_array'][0]) in article_authors)
 
         # check if authors got the right mapping to their abbreviation
         self.assertTrue(('mark daniel', 'md') in author_abbreviations)
@@ -78,6 +79,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
         self.assertTrue(('theresa moosmann', 'tm') in author_abbreviations)
         self.assertTrue(('jan armin-döbeln', 'jad') in author_abbreviations)
         self.assertTrue(('lvz', 'lvz') in author_abbreviations)
+        self.assertTrue((None, 'qxy') in author_abbreviations)
 
     def test_search_for_full_name_article_0(self):
         result = connect_abbreviation_to_author.search_for_full_name(self.articles[0], self.authors_with_frequency)
@@ -128,7 +130,7 @@ class TestConnectAbbreviationToAuthor(TestCase):
         result = connect_abbreviation_to_author.search_for_full_name(self.articles[5],
                                                                      self.authors_with_frequency)
 
-        self.assertEqual(matches_for_focused_article, result)
+        self.assertTrue(compare_dict_lists(matches_for_focused_article, result))
 
     def test_search_for_full_name_article_9(self):
         matches_for_focused_article = [
@@ -210,3 +212,13 @@ class TestConnectAbbreviationToAuthor(TestCase):
         abbreviation = 'has'
 
         self.assertFalse(connect_abbreviation_to_author.ordered_abbreviation_chars_match_name(author, abbreviation))
+
+
+def compare_dict_lists(s, t):
+    t = list(t)   # make a mutable copy
+    try:
+        for elem in s:
+            t.remove(elem)
+    except ValueError:
+        return False
+    return not t

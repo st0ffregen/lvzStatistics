@@ -29,6 +29,8 @@
   * fehlererkennung: wie viele distinct abbrs gibt es mehr als distinct authors (kann natürlich auch sein, dass es tat. mehr abbrs als 1 pro autor gibt, aber das ist wahrscheinlich die minderheit)
   * alle full names in die db schreiben, auf einen entry der authors table mappen
   * dann auswahl welche abbr, name pairs bleiben sollen und alle einträge der article_authors tabelle entsprechend umbiegen 
+  * beim retrievel nochmal checken ob es zwischen Groß und Kleinschreibung unterscheidt (evtl. Benachteiligung adeliger)
+  * checken ob die namen signifikant kürzer in der autorenlandschaft vertreten sind als das kürzel --> dann wahrscheinlich kein mapping
 
 # other
 * analyzeDataAndMoveToElastic.log can probably be removed

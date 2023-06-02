@@ -16,6 +16,7 @@ punctuation_blocklist = ['»', '-', '“', '*', '"', '“']
 punctuation_blocklist_keep_whitespace = [' -', '  ', '“ ', ' „', '" ', '“ ']
 inner_punctuation_blocklist = [u'\xa0', u'\xc2']
 organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline']
+regional_newspaper = ['daz', 'oaz', 'ovz']
 re_name = r'((?:[\p{L}]+|\p{L}\.)(?:\s|-)(?:[\p{L}]+|\p{L}\.)(?:(?:\s|-)[\p{L}]*|\p{L}\.)?)'
 
 success = 0
@@ -58,11 +59,9 @@ class Article:
 def loadDownloadedData(databaseName, limit, offset):
     con = sqlite3.connect(databaseName)
     cur = con.cursor()
-    cur.execute('select url, contextTag from articles order by id desc limit ' + str(limit) + ' offset ' + str(offset))
+    cur.execute('select url, contextTag from articles order by id desc limit ? offset ?', (str(limit), str(offset)))
     entries = cur.fetchall()
-    articles = []
-    for row in entries:
-        articles.append({'url': row[0], 'contextTag': row[1]})
+    articles = {row[0]: json.loads(row[1]) for row in entries} # {url: contextTag}
 
     return articles
 
@@ -145,6 +144,11 @@ def handle_special_cases(article_text):
 
     # Case 9: organization abbreviation
     match = regex.search(rf'von\s({"|".join(organizations)})$', article_text.lower(), flags=re.UNICODE)
+    if match:
+        return [match.group(1)], [True]
+
+    # Case 10: regional newspaper
+    match = regex.search(rf'von\s({"|".join(regional_newspaper)})$', article_text.lower(), flags=re.UNICODE)
     if match:
         return [match.group(1)], [True]
 
@@ -453,68 +457,55 @@ def check_if_is_abbreviation(string):
         return True
 
 
-def save_to_database(articles, logger):
+def save_to_database(articles):
     con = sqlite3.connect('../data/articles_with_author_mapping.db')
     cur = con.cursor()
     global failed
 
+    updated_at = datetime.utcnow().isoformat()
 
-    for article in articles:
-        if article is not None:
-            try:
-                updated_at = datetime.utcnow().isoformat()
+    cur.executemany('insert into articles values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                [(None, article.url, json.dumps(article.context_tag), article.organization, json.dumps(article.author_array),
+                 json.dumps(article.author_is_abbreviation_array),
+                 article.genre, json.dumps(article.article_namespace_array), article.published_at, article.modified_at,
+                 article.is_free, article.headline, article.text, updated_at, updated_at) for article in articles if article is not None])
 
-                article.author_array = json.dumps(article.author_array)
-                article.author_is_abbreviation_array = json.dumps(article.author_is_abbreviation_array)
-                article.article_namespace_array = json.dumps(article.article_namespace_array)
-
-                cur.execute('insert into articles values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                            (None, article.url, article.context_tag, article.organization, article.author_array,
-                             article.author_is_abbreviation_array,
-                             article.genre, article.article_namespace_array, article.published_at, article.modified_at,
-                             article.is_free, article.headline, article.text, updated_at, updated_at))
-
-            except sqlite3.IntegrityError as e:
-                logger.warning(f'error for article {article.url} : {e}')
-                failed += 1
     con.commit()
 
 
 
-def aggregateData(article, logger):
+def aggregateData(url, context_tag, logger):
     global success
     global failed
     global notLVZ
 
     try:
-        jsonContent = json.loads(article['contextTag'])
-
-        organization = jsonContent['author']['name'].lower()
+        organization = context_tag['author']['name'].lower()
 
         if organization != 'lvz':
             notLVZ += 1
 
-        articleNamespace = getArticleNamespace(article['url'])
-        genre = getData(jsonContent, 'genre')
-        datePublished = getData(jsonContent, 'datePublished')
-        dateModified = getData(jsonContent, 'dateModified')
-        headline = getData(jsonContent, 'headline')
-        text = getData(jsonContent, 'articleBody')
-        isFree = getData(jsonContent, 'isAccessibleForFree')
+        articleNamespace = getArticleNamespace(url)
+        genre = getData(context_tag, 'genre')
+        datePublished = getData(context_tag, 'datePublished')
+        dateModified = getData(context_tag, 'dateModified')
+        headline = getData(context_tag, 'headline')
+        text = getData(context_tag, 'articleBody')
+        isFree = getData(context_tag, 'isAccessibleForFree')
         if text is not None and organization == 'lvz':
             authorArray, author_is_abbreviation_array = get_author(text)
         else:
             authorArray, author_is_abbreviation_array = None, None
 
-        article_object = Article(article['url'], article['contextTag'], organization, authorArray, author_is_abbreviation_array,
+        article_object = Article(url, context_tag, organization, authorArray, author_is_abbreviation_array,
                                  genre, articleNamespace, datePublished, dateModified, isFree, headline, text)
 
-        logger.info(f'Successfully aggregated data for {article["url"]}')
+        logger.info(f'Successfully aggregated data for {url}')
         success += 1
         return article_object
 
     except Exception as e:
-        logger.warning(f'Something went wrong for {article["url"]}: {e}')
+        logger.warning(f'Something went wrong for {url}: {e}')
         logger.warning(traceback.format_exception(*sys.exc_info()))
         failed += 1
         return
@@ -529,10 +520,10 @@ def main():
         logger.info('start run from ' + str(offset) + ' to ' + str(offset + limit))
         articles = loadDownloadedData('../data/all_downloaded_articles.db', limit, offset)
         articles_for_db = []
-        for article in articles:
-            articles_for_db.append(aggregateData(article, logger))
+        for url, context_tag in articles.items():
+            articles_for_db.append(aggregateData(url, context_tag, logger))
 
-        save_to_database(articles_for_db, logger)
+        save_to_database(articles_for_db)
 
 
     print('success: ' + str(success))
