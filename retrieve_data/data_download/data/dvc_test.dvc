@@ -1,5 +1,0 @@
-outs:
-- md5: 2fbef63ec8696605ed02cf5f7645ec1c
-  size: 11
-  hash: md5
-  path: dvc_test
