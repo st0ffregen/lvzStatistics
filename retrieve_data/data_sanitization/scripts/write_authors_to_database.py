@@ -14,16 +14,13 @@ import json
 # if it does not yield any results we apply a fuzzy matching
 # we determine a certainty score to later decide the best match based on certainty and other heuristics
 
-organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline'] + ['daz', 'oaz', 'ovz'] # second are regional newspaper belonging to the LVZ
+organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline', 'LVZ-Online'] + ['daz', 'oaz', 'ovz'] # second are regional newspaper belonging to the LVZ
 batch_size = 100  # TODO: check again, if this could be a problem when abbreviated articles are sparse. plot graph displaying the number of articles with abbreviations over time
 database_batch_size = 5000 # when to update the database
 
 def main():
     write_author_to_database()
 
-# TODO: 01.06: nochmal in die db mit select id, name from authors group by name schauen und Schrott behandeln
-# gerade auch mal select id, name, count(*) as count from authors group by name having count > 10 schauen und die wirklich relevanten sachen behandeln
-# TODO 30.05: dann full name authors in die db nachtragen und dann mit dem finalen mapping beginnen
 def write_author_to_database():
     con, cur = get_db_connection()
     months = 6

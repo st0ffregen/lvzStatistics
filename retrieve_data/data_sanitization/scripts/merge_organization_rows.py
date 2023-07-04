@@ -10,7 +10,7 @@ def get_db_connection():
 
 
 if __name__ == '__main__':
-    organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline'] + ['daz', 'oaz', 'ovz'] # second are regional newspaper belonging to the LVZ
+    organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline', 'LVZ-Online', 'daz', 'oaz', 'ovz']
     con, cur = get_db_connection()
     for organization in organizations:
         organization = organization.upper()

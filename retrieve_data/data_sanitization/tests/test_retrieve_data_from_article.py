@@ -58,6 +58,14 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
             retrieveDataFromArticle.get_author('some text. Mark Daniel')
         )
 
+        # self.assertEqual(
+        #     (
+        #         ['Kathrin Kirscht'],
+        #         [False]
+        #     ),
+        #     retrieveDataFromArticle.get_author('konnte das hei\u00dfe Getr\u00e4nk ausgeschenkt werden. Kathrin Kirscht')
+        # )
+
     def test_get_author_string_single_full_name_without_von_with_colon(self):
         # Case 1.2
         # Single full name without "Von" prefix, separated by a period or colon

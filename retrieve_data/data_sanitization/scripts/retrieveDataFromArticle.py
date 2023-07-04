@@ -15,7 +15,7 @@ redaktionsAuthorList = ['Redaktion.', 'red.']
 punctuation_blocklist = ['»', '-', '“', '*', '"', '“']
 punctuation_blocklist_keep_whitespace = [' -', '  ', '“ ', ' „', '" ', '“ ']
 inner_punctuation_blocklist = [u'\xa0', u'\xc2']
-organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline']
+organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline', 'LVZ-Online']
 regional_newspaper = ['daz', 'oaz', 'ovz']
 re_name = r'((?:[\p{L}]+|\p{L}\.)(?:\s|-)(?:[\p{L}]+|\p{L}\.)(?:(?:\s|-)[\p{L}]*|\p{L}\.)?)'
 
