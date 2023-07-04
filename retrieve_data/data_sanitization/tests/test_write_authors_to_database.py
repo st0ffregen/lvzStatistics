@@ -15,7 +15,7 @@ class TestWriteAuthorsToDataBase(TestCase):
         'mark daniel': 2, 'hannah suppa': 1, 'theresa moosmann': 2, 'tilmann prüfer': 1, 'tim meyer': 1,
         'jan armin-döbeln': 1
     })
-    write_authors_to_database
+
     def setUp(self):
         # Create a temporary in-memory SQLite database for testing
         self.con = sqlite3.connect(':memory:')
@@ -52,14 +52,6 @@ class TestWriteAuthorsToDataBase(TestCase):
         article_authors_abbreviations = self.cur.execute('SELECT ar.id, au.abbreviation FROM articles ar join article_authors aa on ar.id=aa.article_id join authors au on aa.author_id=au.id ').fetchall()
         author_abbreviations = self.cur.execute('select name, abbreviation from authors').fetchall()
         article_ids = [row[0] for row in article_authors_abbreviations]
-
-        # articles with entries because they have abbreviations
-        self.assertFalse(self.articles[0]['id'] in article_ids)
-        self.assertFalse(self.articles[1]['id'] in article_ids)
-        self.assertFalse(self.articles[6]['id'] in article_ids)
-        self.assertFalse(self.articles[7]['id'] in article_ids)
-        self.assertFalse(self.articles[8]['id'] in article_ids)
-        self.assertFalse(self.articles[10]['id'] in article_ids)
 
         # check if the correct author was matched
         self.assertTrue((2, self.articles[2]['author_array'][1]) in article_authors_abbreviations)

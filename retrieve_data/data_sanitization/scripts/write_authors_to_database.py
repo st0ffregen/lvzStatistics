@@ -27,7 +27,7 @@ def main():
 def write_author_to_database():
     con, cur = get_db_connection()
     months = 6
-    articles = get_articles_with_abbreviations(cur)
+    articles = get_articles(cur)
     current_abbreviation_to_author_mapping = []
 
     window_articles = get_article_window(cur, articles[0], months=months)
@@ -69,8 +69,8 @@ def add_article_id(article, matches):
         match['article_id'] = article['id']
 
 
-def get_articles_with_abbreviations(cur):
-    cur.execute('select id, author_array, author_is_abbreviation, published_at from articles where organization = "lvz" and author_is_abbreviation is not null and author_is_abbreviation like "%true%" order by published_at asc')
+def get_articles(cur):
+    cur.execute('select id, author_array, author_is_abbreviation, published_at from articles where organization = "lvz" order by published_at asc')
     rows = cur.fetchall()
 
     articles = []
@@ -345,7 +345,7 @@ def get_abbreviations(focused_article):
 def add_full_names(focused_article):
     full_names = [{'abbreviation': None, 'author': author, 'certainty': None} for author, is_abbreviated in zip(focused_article['author_array'], focused_article['author_is_abbreviation']) if is_abbreviated is False]
     remaining_authors = [{'abbreviation': None, 'author': author, 'certainty': None} for author, is_abbreviated in zip(focused_article['author_array'], focused_article['author_is_abbreviation']) if is_abbreviated]
-    remaining_author_is_abbreviation = [True]  * len(remaining_authors)
+    remaining_author_is_abbreviation = [True] * len(remaining_authors)
     return full_names, remaining_author_is_abbreviation, remaining_authors
 
 def add_organization_matches(focused_article):
