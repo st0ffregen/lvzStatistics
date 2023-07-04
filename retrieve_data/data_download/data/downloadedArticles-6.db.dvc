@@ -1,0 +1,5 @@
+outs:
+- md5: c1519c9e7d35135198b15f91054392dc
+  size: 95199232
+  hash: md5
+  path: downloadedArticles-6.db

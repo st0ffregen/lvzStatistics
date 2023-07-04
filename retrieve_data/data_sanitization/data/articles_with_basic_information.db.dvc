@@ -1,0 +1,5 @@
+outs:
+- md5: f9330cab1f52dc89c2d64a18e85995d6
+  size: 5120794624
+  hash: md5
+  path: articles_with_basic_information.db
