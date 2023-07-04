@@ -1,0 +1,5 @@
+outs:
+- md5: b71528930537c97d9b8d464cb576c0b8
+  size: 52592640
+  hash: md5
+  path: articles.db
