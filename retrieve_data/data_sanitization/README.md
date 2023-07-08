@@ -11,11 +11,14 @@
   * notLVZ: 166612
   * select count(*) from articles where organization = 'lvz' and author_array is Null --> 6822
 
-# To be done
+## Author Mapping
 * verknuepfung autoren zu autorenkuerzeln
-  * fuzzy matching (idee noch nciht ausgereif)
+  * fuzzy matching
   * direktes matching ueber anfangsbuchstaben des vornamens und des nachnamens vergleichen mit kürzel
   * bei beidem statitische sigifikanz maß, wenn es mehr als ein match gibt
+
+# To be done
+* verknuepfung autoren zu autorenkuerzeln
   * könnte noch ressortzugehörigkeit einbeziehen
   * könnte into account taken dass wenn es schon ein matching gibt und das zeitlich nahe ist, die chance erhöt, dass die abbr wieder auf den schon gefundenen namen matched
   * auch beachten, dass keine zwei autoren auf die selbe abbr mappen können wenn zeitlich nah beieinander (und bei autor:innen threshold an geschrieben artikel reached haben)
