@@ -19,6 +19,7 @@
 
 # To be done
 * die author recognition Fälle mit kleinen "v" in "von ..." behandeln
+* eineheitliche groß und kleinschreibung bei autoren (zurzeit die mit abbr=null groß geschrieben)
 * verknuepfung autoren zu autorenkuerzeln
   * könnte noch ressortzugehörigkeit einbeziehen
   * könnte into account taken dass wenn es schon ein matching gibt und das zeitlich nahe ist, die chance erhöt, dass die abbr wieder auf den schon gefundenen namen matched
