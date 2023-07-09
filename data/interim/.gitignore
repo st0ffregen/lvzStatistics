@@ -1,0 +1,3 @@
+*.db
+*.csv
+!example_database_for_articles_with_basic_information.db

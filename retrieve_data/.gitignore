@@ -1,7 +1,0 @@
-data_download/data/*.db
-!data_download/data/example_database_for_downloaded_articles.db
-data_download/logs/*.log*
-data_sanitization/data/*.db
-data_sanitization/data/*.csv
-!data_sanitization/data/example_database_for_articles_with_basic_information.db
-data_sanitization/logs/*.log*
