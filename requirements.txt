@@ -36,6 +36,7 @@ contourpy==1.1.0
 cryptography==41.0.1
 cycler==0.11.0
 cymem==2.0.7
+de-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.5.0/de_core_news_sm-3.5.0-py3-none-any.whl
 debugpy==1.6.7
 decorator==5.1.1
 defusedxml==0.7.1
@@ -144,6 +145,7 @@ rfc3986-validator==0.1.1
 rich==13.4.2
 ruamel.yaml==0.17.32
 ruamel.yaml.clib==0.2.7
+scipy==1.11.1
 scmrepo==1.0.4
 seaborn==0.12.2
 Send2Trash==1.8.2
