@@ -18,6 +18,7 @@
   * bei beidem statitische sigifikanz maß, wenn es mehr als ein match gibt
 
 # To be done
+* die author recognition Fälle mit kleinen "v" in "von ..." behandeln
 * verknuepfung autoren zu autorenkuerzeln
   * könnte noch ressortzugehörigkeit einbeziehen
   * könnte into account taken dass wenn es schon ein matching gibt und das zeitlich nahe ist, die chance erhöt, dass die abbr wieder auf den schon gefundenen namen matched
