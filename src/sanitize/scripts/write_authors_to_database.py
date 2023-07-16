@@ -16,7 +16,7 @@ from enum import Enum
 # if it does not yield any results we apply a fuzzy matching
 # we determine a certainty score to later decide the best match based on certainty and other heuristics
 
-organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline', 'LVZ-Online'] + ['daz', 'oaz', 'ovz'] # second are regional newspaper belonging to the LVZ
+organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline', 'lvz-online'] + ['daz', 'oaz', 'ovz'] # second are regional newspaper belonging to the LVZ
 batch_size = 100  # TODO: check again, if this could be a problem when abbreviated articles are sparse. plot graph displaying the number of articles with abbreviations over time
 database_batch_size = 5000 # when to update the database
 
@@ -126,12 +126,12 @@ def get_authors_with_frequency(articles):
             continue
 
         abbreviations.update(
-            author.lower().strip()
+            author.strip()
             for author, is_abbreviation in zip(article['author_array'], article['author_is_abbreviation'])
             if is_abbreviation
         )
         authors = [
-            author.lower().strip()
+            author.strip()
             for author, is_abbreviation in zip(article['author_array'], article['author_is_abbreviation'])
             if not is_abbreviation
         ]
@@ -220,7 +220,7 @@ def find_fuzzy_matches(all_authors, author_abbreviations) -> list[AuthorRow]:
         matches = []
 
         for author, frequency_and_abbreviation in all_authors.items():
-            full_name_split = re.split(r' |-', author)
+            full_name_split = re.split(r' |-', author.lower())
             first_name = full_name_split[0]
             last_name = full_name_split[-1]
             certainty = 0
@@ -229,7 +229,7 @@ def find_fuzzy_matches(all_authors, author_abbreviations) -> list[AuthorRow]:
                 # author's name is likely not a real name
                 continue
 
-            if are_necessary_conditions_fullfilled(author, author_abbreviation) is False:
+            if are_necessary_conditions_fullfilled(author.lower(), author_abbreviation) is False:
                 continue
 
             certainty = calculate_fuzzy_certainty(author_abbreviation, certainty, first_name, full_name_split, last_name)
@@ -355,7 +355,7 @@ def add_frequency_based_certainty_for_direct_matches(matches):
 
 def prepare_all_authors_dict(all_authors_with_frequency):
     for author, frequency in all_authors_with_frequency.items():
-        author_abbreviation = ''.join([first_char[0] for first_char in re.split(r' |-', author) if first_char != ''])
+        author_abbreviation = ''.join([first_char[0] for first_char in re.split(r' |-', author) if first_char != '']).lower()
         all_authors_with_frequency[author] = {'frequency': frequency, 'naive_abbreviation': author_abbreviation}
 
 
@@ -382,7 +382,7 @@ def add_organization_matches(focused_article):
 
     for author in author_array:
         if author.lower() in organizations:
-            matches.append(AuthorRow(author, author, 1, MatchingType.ORGANIZATION_MATCH))
+            matches.append(AuthorRow(author.lower(), author.lower(), 1, MatchingType.ORGANIZATION_MATCH))
         else:
             remaining_authors.append(author)
             remaining_author_is_abbreviation.append(

@@ -13,8 +13,8 @@ class TestWriteAuthorsToDataBase(TestCase):
     articles = test_data.articles
 
     authors_with_frequency = defaultdict(int, {
-        'mark daniel': 2, 'hannah suppa': 1, 'theresa moosmann': 2, 'tilmann prüfer': 1, 'tim meyer': 1,
-        'jan armin-döbeln': 1
+        'Mark Daniel': 2, 'Hannah Suppa': 1, 'Theresa Moosmann': 2, 'Tilmann Prüfer': 1, 'Tim Meyer': 1,
+        'Jan Armin-Döbeln': 1
     })
 
     def setUp(self):
@@ -66,11 +66,11 @@ class TestWriteAuthorsToDataBase(TestCase):
         self.assertTrue((12, self.articles[12]['author_array'][0]) in article_authors_abbreviations)
 
         # check if authors got the right mapping to their abbreviation
-        self.assertTrue(('mark daniel', 'md') in author_abbreviations)
-        self.assertTrue(('mark daniel', 'mad') in author_abbreviations)
-        self.assertTrue(('hannah suppa', 'has') in author_abbreviations)
-        self.assertTrue(('theresa moosmann', 'tm') in author_abbreviations)
-        self.assertTrue(('jan armin-döbeln', 'jad') in author_abbreviations)
+        self.assertTrue(('Mark Daniel', 'md') in author_abbreviations)
+        self.assertTrue(('Mark Daniel', 'mad') in author_abbreviations)
+        self.assertTrue(('Hannah Suppa', 'has') in author_abbreviations)
+        self.assertTrue(('Theresa Moosmann', 'tm') in author_abbreviations)
+        self.assertTrue(('Jan Armin-Döbeln', 'jad') in author_abbreviations)
         self.assertTrue(('lvz', 'lvz') in author_abbreviations)
         self.assertTrue((None, 'qxy') in author_abbreviations)
 
@@ -90,7 +90,7 @@ class TestWriteAuthorsToDataBase(TestCase):
     def test_search_for_full_name_article_with_abbreviation_and_full_name(self):
         matches_for_focused_article = [
             AuthorRow("Theresa Moosmann", None, None, MatchingType.IS_FULL_NAME),
-            AuthorRow("mark daniel", "md", 0.8, MatchingType.DIRECT_MATCH)
+            AuthorRow("Mark Daniel", "md", 0.8, MatchingType.DIRECT_MATCH)
         ]
 
         result = write_authors_to_database.search_for_full_name(self.articles[2], self.authors_with_frequency)
@@ -99,8 +99,8 @@ class TestWriteAuthorsToDataBase(TestCase):
 
     def test_search_for_full_name_article_3(self):
         matches_for_focused_article = [
-            AuthorRow("theresa moosmann", "tm", 0.9, MatchingType.DIRECT_MATCH),
-            AuthorRow("hannah suppa", "has", 0.6, MatchingType.FUZZY_MATCH)
+            AuthorRow("Theresa Moosmann", "tm", 0.9, MatchingType.DIRECT_MATCH),
+            AuthorRow("Hannah Suppa", "has", 0.6, MatchingType.FUZZY_MATCH)
         ]
 
         result = write_authors_to_database.search_for_full_name(self.articles[3], self.authors_with_frequency)
@@ -110,7 +110,7 @@ class TestWriteAuthorsToDataBase(TestCase):
     def test_search_for_full_name_article_4(self):
         matches_for_focused_article = [
             AuthorRow("lvz", "lvz", 1, MatchingType.ORGANIZATION_MATCH),
-            AuthorRow("mark daniel", "mad", 0.9, MatchingType.FUZZY_MATCH)
+            AuthorRow("Mark Daniel", "mad", 0.9, MatchingType.FUZZY_MATCH)
         ]
 
         result = write_authors_to_database.search_for_full_name(self.articles[4],
@@ -120,8 +120,8 @@ class TestWriteAuthorsToDataBase(TestCase):
 
     def test_search_for_full_name_article_5(self):
         matches_for_focused_article = [
-            AuthorRow("mark daniel", "md", 0.8, MatchingType.DIRECT_MATCH),
-            AuthorRow("theresa moosmann", "tm", 0.9, MatchingType.DIRECT_MATCH)
+            AuthorRow("Mark Daniel", "md", 0.8, MatchingType.DIRECT_MATCH),
+            AuthorRow("Theresa Moosmann", "tm", 0.9, MatchingType.DIRECT_MATCH)
         ]
 
         result = write_authors_to_database.search_for_full_name(self.articles[5],
@@ -140,7 +140,7 @@ class TestWriteAuthorsToDataBase(TestCase):
         self.assertEqual(matches_for_focused_article, result)
 
     def test_search_for_full_name_article_11(self):
-        matches_for_focused_article = [AuthorRow("jan armin-döbeln", "jad", 0.8, MatchingType.DIRECT_MATCH)]
+        matches_for_focused_article = [AuthorRow("Jan Armin-Döbeln", "jad", 0.8, MatchingType.DIRECT_MATCH)]
 
         result = write_authors_to_database.search_for_full_name(self.articles[11],
                                                                 self.authors_with_frequency)
@@ -193,7 +193,7 @@ class TestWriteAuthorsToDataBase(TestCase):
 
         self.assertTrue(write_authors_to_database.ordered_abbreviation_chars_match_name(author, abbreviation))
 
-        author = 'theresa moosmann'
+        author = 'theresa ,oosmann'
         abbreviation = 'has'
 
         self.assertTrue(write_authors_to_database.ordered_abbreviation_chars_match_name(author, abbreviation))
