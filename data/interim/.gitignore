@@ -1,3 +1,4 @@
 *.db
 *.csv
 !example_database_for_articles_with_basic_information.db
+!example_database_articles_with_author_mapping.db

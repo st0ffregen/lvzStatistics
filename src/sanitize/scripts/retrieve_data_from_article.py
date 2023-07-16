@@ -4,10 +4,12 @@ import re
 import sys
 import traceback
 from datetime import datetime
+from typing import Tuple
+
 import spacy
 import regex
 import tqdm
-from retrieve_data.data_sanitization.utils.logger import Logger
+from src.utils.logger import Logger
 
 nlp = spacy.load('de_core_news_sm')
 
@@ -111,7 +113,7 @@ def remove_inner_unwanted_punctuation(string):
 
     return string.strip()
 
-def get_author(article_text):
+def get_author(article_text: str) -> Tuple[list, list] | tuple[None, None]:
     authors, is_abbreviations = getAuthorString(article_text)
 
     if authors is None:
@@ -123,6 +125,9 @@ def get_author(article_text):
     return authors, is_abbreviation
 
 def remove_empty_strings(authors, is_abbreviation):
+    if len(authors) != len(is_abbreviation):
+        raise ValueError("Both list authors and is_abbreviations must have the same length.")
+
     for i in range(len(authors)):
         if authors[i] == '':
             authors.pop(i)

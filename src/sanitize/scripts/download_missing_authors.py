@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 import logging
 import traceback
 from datetime import datetime
-from retrieveDataFromArticle import get_author
+from retrieve_data_from_article import get_author
 
 
 class NoContextTagError(Exception):

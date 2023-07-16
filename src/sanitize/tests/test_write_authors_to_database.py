@@ -1,11 +1,12 @@
 from unittest import TestCase
 from unittest.mock import Mock
 import sqlite3
-from collections import defaultdict, Counter
+from collections import defaultdict
 import json
-import sys
-from ..tests import test_data
-from ..scripts import write_authors_to_database
+from src.sanitize.tests import test_data
+from src.sanitize.scripts import write_authors_to_database
+from src.sanitize.scripts.write_authors_to_database import AuthorRow, MatchingType
+
 
 class TestWriteAuthorsToDataBase(TestCase):
 
@@ -25,7 +26,7 @@ class TestWriteAuthorsToDataBase(TestCase):
         self.cur.execute(
             'CREATE TABLE "articles" ( "id" INTEGER, "url" TEXT NOT NULL, "organization" TEXT NOT NULL, "author_array" TEXT, "author_is_abbreviation" TEXT, "published_at" TEXT NOT NULL)')
         self.cur.execute(
-            'CREATE TABLE "authors" ( "id" INTEGER NOT NULL UNIQUE, "name" TEXT, "abbreviation" TEXT, "matching_certainty" NUMERIC, "created_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL, PRIMARY KEY("id" AUTOINCREMENT))')
+            'CREATE TABLE "authors" ( "id" INTEGER NOT NULL UNIQUE, "name" TEXT, "abbreviation" TEXT, "matching_certainty" NUMERIC, "matching_type" TEXT, "created_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL, PRIMARY KEY("id" AUTOINCREMENT))')
         self.cur.execute(
             'CREATE TABLE "article_authors" ( "id" INTEGER NOT NULL UNIQUE, "article_id" INTEGER NOT NULL, "author_id" INTEGER NOT NULL, "created_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL, UNIQUE("article_id","author_id"), PRIMARY KEY("id" AUTOINCREMENT))')
         self.con.commit()
@@ -76,20 +77,20 @@ class TestWriteAuthorsToDataBase(TestCase):
     def test_search_for_full_name_article_with_one_author(self):
         result = write_authors_to_database.search_for_full_name(self.articles[0], self.authors_with_frequency)
 
-        self.assertEqual([{'abbreviation': None, 'author': 'Mark Daniel', 'certainty': None}], result)
+        self.assertEqual([AuthorRow("Mark Daniel", None, None, MatchingType.IS_FULL_NAME)], result)
 
     def test_search_for_full_name_article_with_two_authors(self):
         result = write_authors_to_database.search_for_full_name(self.articles[1], self.authors_with_frequency)
 
         self.assertEqual([
-            {'abbreviation': None, 'author': 'Mark Daniel', 'certainty': None},
-            {'abbreviation': None, 'author': 'Hannah Suppa', 'certainty': None},
+            AuthorRow("Mark Daniel", None, None, MatchingType.IS_FULL_NAME),
+            AuthorRow("Hannah Suppa", None, None, MatchingType.IS_FULL_NAME)
         ], result)
 
     def test_search_for_full_name_article_with_abbreviation_and_full_name(self):
         matches_for_focused_article = [
-            {'abbreviation': None, 'author': 'Theresa Moosmann', 'certainty': None},  # full name
-            {'abbreviation': 'md', 'author': 'mark daniel', 'certainty': 0.8},  # direct match
+            AuthorRow("Theresa Moosmann", None, None, MatchingType.IS_FULL_NAME),
+            AuthorRow("mark daniel", "md", 0.8, MatchingType.DIRECT_MATCH)
         ]
 
         result = write_authors_to_database.search_for_full_name(self.articles[2], self.authors_with_frequency)
@@ -98,8 +99,8 @@ class TestWriteAuthorsToDataBase(TestCase):
 
     def test_search_for_full_name_article_3(self):
         matches_for_focused_article = [
-            {'abbreviation': 'tm', 'author': 'theresa moosmann', 'certainty': 0.9},  # direct match
-            {'abbreviation': 'has', 'author': 'hannah suppa', 'certainty': 0.6}  # direct match
+            AuthorRow("theresa moosmann", "tm", 0.9, MatchingType.DIRECT_MATCH),
+            AuthorRow("hannah suppa", "has", 0.6, MatchingType.FUZZY_MATCH)
         ]
 
         result = write_authors_to_database.search_for_full_name(self.articles[3], self.authors_with_frequency)
@@ -108,8 +109,8 @@ class TestWriteAuthorsToDataBase(TestCase):
 
     def test_search_for_full_name_article_4(self):
         matches_for_focused_article = [
-            {'abbreviation': 'lvz', 'author': 'lvz', 'certainty': 1},  # direct organization match
-            {'abbreviation': 'mad', 'author': 'mark daniel', 'certainty': 0.9}  # fuzzy match
+            AuthorRow("lvz", "lvz", 1, MatchingType.ORGANIZATION_MATCH),
+            AuthorRow("mark daniel", "mad", 0.9, MatchingType.FUZZY_MATCH)
         ]
 
         result = write_authors_to_database.search_for_full_name(self.articles[4],
@@ -119,8 +120,8 @@ class TestWriteAuthorsToDataBase(TestCase):
 
     def test_search_for_full_name_article_5(self):
         matches_for_focused_article = [
-            {'abbreviation': 'md', 'author': 'mark daniel', 'certainty': 0.8},  # direct match
-            {'abbreviation': 'tm', 'author': 'theresa moosmann', 'certainty': 0.9},  # direct match
+            AuthorRow("mark daniel", "md", 0.8, MatchingType.DIRECT_MATCH),
+            AuthorRow("theresa moosmann", "tm", 0.9, MatchingType.DIRECT_MATCH)
         ]
 
         result = write_authors_to_database.search_for_full_name(self.articles[5],
@@ -130,7 +131,7 @@ class TestWriteAuthorsToDataBase(TestCase):
 
     def test_search_for_full_name_article_9(self):
         matches_for_focused_article = [
-            {'abbreviation': 'lvz', 'author': 'lvz', 'certainty': 1},  # direct organization match
+            AuthorRow("lvz", "lvz", 1, MatchingType.ORGANIZATION_MATCH),
         ]
 
         result = write_authors_to_database.search_for_full_name(self.articles[9],
@@ -139,9 +140,7 @@ class TestWriteAuthorsToDataBase(TestCase):
         self.assertEqual(matches_for_focused_article, result)
 
     def test_search_for_full_name_article_11(self):
-        matches_for_focused_article = [
-            {'abbreviation': 'jad', 'author': 'jan armin-döbeln', 'certainty': 0.8},  # direct match
-        ]
+        matches_for_focused_article = [AuthorRow("jan armin-döbeln", "jad", 0.8, MatchingType.DIRECT_MATCH)]
 
         result = write_authors_to_database.search_for_full_name(self.articles[11],
                                                                 self.authors_with_frequency)
@@ -150,11 +149,11 @@ class TestWriteAuthorsToDataBase(TestCase):
 
     def test_add_article_id(self):
         focused_article = self.articles[0]
-        matches = [{'abbreviation': 'test', 'author': 'author_0', 'certainty': 0}]
+        matches = [AuthorRow("author_0", "test", 0, MatchingType.IS_FULL_NAME)]
 
         write_authors_to_database.add_article_id(focused_article, matches)
 
-        self.assertEqual(0, matches[0]['article_id'])
+        self.assertEqual(0, matches[0].article_id)
 
     def test_get_authors_with_frequency(self):
         authors_with_frequency = write_authors_to_database.get_authors_with_frequency(self.articles)
@@ -178,7 +177,7 @@ class TestWriteAuthorsToDataBase(TestCase):
         self.assertEqual(author_abbreviations, result)
 
     def test_add_organization_matches(self):
-        expected_direct_matches = [{'abbreviation': 'lvz', 'author': 'lvz', 'certainty': 1}]
+        expected_direct_matches = [AuthorRow("lvz", "lvz", 1, MatchingType.ORGANIZATION_MATCH)]
         expected_result_remaining_author_is_abbreviation = [True]
         expected_result_remaining_authors = ['mad']
 
