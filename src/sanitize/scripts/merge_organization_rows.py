@@ -4,7 +4,7 @@
 import sqlite3
 
 def get_db_connection():
-    con = sqlite3.connect('../data/articles_with_author_mapping.db')
+    con = sqlite3.connect('../../../data/interim/articles_with_author_mapping.db')
     cur = con.cursor()
     return con, cur
 

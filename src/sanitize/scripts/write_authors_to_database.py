@@ -57,12 +57,13 @@ def write_author_to_database():
     window_articles = get_article_window(cur, articles[0], months=months)
 
     for idx, article in enumerate(tqdm.tqdm(articles)):
-        window_articles_authors_with_frequency = get_authors_with_frequency(window_articles)
+        if article["author_array"] is not None:
+            window_articles_authors_with_frequency = get_authors_with_frequency(window_articles)
 
-        matches = search_for_full_name(article, window_articles_authors_with_frequency)
+            matches = search_for_full_name(article, window_articles_authors_with_frequency)
 
-        add_article_id(article, matches)
-        current_abbreviation_to_author_mapping.extend(matches)
+            add_article_id(article, matches)
+            current_abbreviation_to_author_mapping.extend(matches)
 
         if article is None:
             save_matches_to_db(con, cur, current_abbreviation_to_author_mapping)
@@ -112,7 +113,7 @@ def get_articles(cur):
 
 
 def get_db_connection():
-    con = sqlite3.connect('../data/articles_with_author_mapping.db')
+    con = sqlite3.connect('../../../data/interim/articles_with_author_mapping.db')
     cur = con.cursor()
     return con, cur
 

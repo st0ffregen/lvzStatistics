@@ -13,8 +13,6 @@
 
 # To be done
 * die author recognition Fälle mit kleinen "v" in "von ..." behandeln
-* eineheitliche groß und kleinschreibung bei autoren (zurzeit die mit abbr=null groß geschrieben)
-* es gibt autoren mti einem leeren String als Kürzel in der db
 
 # other
 * analyzeDataAndMoveToElastic.log can probably be removed
