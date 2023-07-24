@@ -2,6 +2,7 @@
 # removes all other entries of the organization in the article_author table
 
 import sqlite3
+from datetime import datetime
 
 def get_db_connection():
     con = sqlite3.connect('../../../data/interim/articles_with_author_mapping.db')
@@ -21,7 +22,7 @@ if __name__ == '__main__':
             continue
         first_id = first_id[0]
         print("Updating article_authors table")
-        cur.execute('update article_authors set author_id = ? where author_id in (select id from authors a where upper(a.name) = ? and upper(a.abbreviation) = ?)', (first_id, organization, organization))
+        cur.execute('update article_authors set author_id = ?, updated_at = ? where author_id in (select id from authors a where upper(a.name) = ? and upper(a.abbreviation) = ?)', (first_id, datetime.utcnow().isoformat(), organization, organization))
         print(f"Affected rows: {cur.rowcount}")
         print("Deleting entries in authors table")
         cur.execute('delete from authors where upper(name) = ? and upper(abbreviation) = ? and id != ?', (organization, organization, first_id))
