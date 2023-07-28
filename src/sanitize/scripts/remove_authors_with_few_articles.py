@@ -39,6 +39,8 @@ def remove_authors():
             con.commit()
 
     print(f"Affected rows: {affected_rows}")
+    cur.close()
+    con.close()
 
 
 def main():

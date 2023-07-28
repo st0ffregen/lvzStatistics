@@ -523,7 +523,7 @@ def main():
         offset = l * 7000
         limit = 7000
         logger.info('start run from ' + str(offset) + ' to ' + str(offset + limit))
-        articles = loadDownloadedData('../data/all_downloaded_articles.db', limit, offset)
+        articles = loadDownloadedData('../../../data/interim/all_downloaded_articles.db', limit, offset)
         articles_for_db = []
         for url, context_tag in articles.items():
             articles_for_db.append(aggregateData(url, context_tag, logger))
