@@ -18,7 +18,7 @@ def close_db_connection(cur, con):
 def remove_authors():
     con, cur = get_db_connection()
 
-    rows = cur.execute('select author_array from articles group by author_array having count(*) < ?', (THRESHOLD,)).fetchall()
+    rows = cur.execute('select lower(author_array) from articles group by author_array having count(*) < ?', (THRESHOLD,)).fetchall()
     # extract all authors
     authors = [author for row in rows for author in json.loads(row[0])]
     # remove duplicates
@@ -38,8 +38,8 @@ def remove_authors():
                 id = row[0]
                 old_authors = json.loads(row[1])
                 old_author_is_abbreviation = json.loads(row[2])
-                new_authors = [a for a in old_authors if a != author]
-                index = old_authors.index(author)
+                new_authors = [a for a in old_authors if a.lower() != author]
+                index = [a.lower() for a in old_authors].index(author)
                 new_author_is_abbreviation = [a for i, a in enumerate(old_author_is_abbreviation) if i != index]
                 cur.execute('update articles set author_array = ?, author_is_abbreviation = ?, updated_at = ? where id = ?', (json.dumps(new_authors), json.dumps(new_author_is_abbreviation), datetime.utcnow().isoformat(), id))
                 affected_rows += cur.rowcount

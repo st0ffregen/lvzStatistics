@@ -1,5 +1,5 @@
 outs:
-- md5: 624ba5bf1af03a0236c4d6ce52abd73d
-  size: 5382914048
+- md5: b109713a72efedd72eb133ed05693104
+  size: 5337579520
   hash: md5
   path: articles_with_author_mapping.db

@@ -463,7 +463,7 @@ def check_if_is_abbreviation(string):
 
 
 def save_to_database(articles):
-    con = sqlite3.connect('../data/articles_with_author_mapping.db')
+    con = sqlite3.connect('../../../data/interim/articles_with_author_mapping.db')
     cur = con.cursor()
     global failed
 
