@@ -4,10 +4,10 @@
   * fuzzy matching
   * direktes matching ueber anfangsbuchstaben des vornamens und des nachnamens vergleichen mit kürzel
   * bei beidem statitische sigifikanz maß, wenn es mehr als ein match gibt
+  * kürzels und atoren rauswerfen, die nur ein paar Mal vorkommen.
 
 # To be done
 * verknuepfung autoren zu autorenkuerzeln
-  * kürzels und atoren rauswerfen, die nur ein paar Mal vorkommen.
   * zeilich abhängies mapping wenn applying vom algorithmus, damit abbrs mehrfach vergeben werden können
     * evtl. hier "article count über Zeit"-Verteilung von autor und abbr abgleichen und diff errechnen 
   * enablen, dass es abbrs gibt ohne autor name (z.B. joka)
