@@ -35,26 +35,27 @@ class TestWriteAuthorsToDataBase(TestCase):
 
     def test_remove_authors(self):
         remove_authors_with_few_articles.get_db_connection = Mock(return_value=(self.con, self.cur))
+        remove_authors_with_few_articles.close_db_connection = Mock()
         remove_authors_with_few_articles.THRESHOLD = 2
 
         remove_authors_with_few_articles.remove_authors()
 
-        authors = self.cur.execute('SELECT ar.id, ar.author_array FROM articles ar').fetchall()
+        authors = self.cur.execute('SELECT ar.id, ar.author_array, ar.author_is_abbreviation FROM articles ar').fetchall()
 
-        # check if the correct author was matched
-        self.assertEqual((0, '["Mark Daniel"]'), (authors[0]))
-        self.assertEqual((1, '["Mark Daniel"]'), (authors[1]))
-        self.assertEqual((2, '["Theresa Moosmann", "md"]'), (authors[2]))
-        self.assertEqual((3, '["tm"]'), (authors[3]))
-        self.assertEqual((4, '["lvz"]'), (authors[4]))
-        self.assertEqual((5, '["md", "tm"]'), (authors[5]))
-        self.assertEqual((6, '["lvz"]'), (authors[6]))
-        self.assertEqual((7, '["lvz"]'), (authors[7]))
-        self.assertEqual((8, '["Theresa Moosmann"]'), (authors[8]))
-        self.assertEqual((9, '["lvz"]'), (authors[9]))
-        self.assertEqual((10, '["lvz"]'), (authors[10]))
-        self.assertEqual((11, '["lvz"]'), (authors[11]))
-        self.assertEqual((12, '["lvz"]'), (authors[12]))
+        # check author_array was correctly modified
+        self.assertEqual((0, '["Mark Daniel"]', '[false]'), (authors[0]))
+        self.assertEqual((1, '["Mark Daniel"]', '[false]'), (authors[1]))
+        self.assertEqual((2, '["Theresa Moosmann", "md"]', '[false, true]'), (authors[2]))
+        self.assertEqual((3, '["tm"]', '[true]'), (authors[3]))
+        self.assertEqual((4, '["lvz"]', '[true]'), (authors[4]))
+        self.assertEqual((5, '["md", "tm"]', '[true, true]'), (authors[5]))
+        self.assertEqual((6, '["lvz"]', '[true]'), (authors[6]))
+        self.assertEqual((7, '["lvz"]', '[true]'), (authors[7]))
+        self.assertEqual((8, '["Theresa Moosmann"]', '[false]'), (authors[8]))
+        self.assertEqual((9, '["lvz"]', '[true]'), (authors[9]))
+        self.assertEqual((10, '["lvz"]', '[true]'), (authors[10]))
+        self.assertEqual((11, '["lvz"]', '[true]'), (authors[11]))
+        self.assertEqual((12, '["lvz"]', '[true]'), (authors[12]))
 
 
 def compare_dict_lists(s, t):
