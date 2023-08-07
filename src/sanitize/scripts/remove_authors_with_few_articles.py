@@ -4,7 +4,7 @@ from datetime import datetime
 
 import tqdm
 
-THRESHOLD = 5
+THRESHOLD = 20
 
 def get_db_connection():
     con = sqlite3.connect('../../../data/interim/articles_with_author_mapping.db')
@@ -18,12 +18,13 @@ def close_db_connection(cur, con):
 def remove_authors():
     con, cur = get_db_connection()
 
-    rows = cur.execute('select lower(author_array) from articles group by author_array having count(*) < ?', (THRESHOLD,)).fetchall()
+    rows = cur.execute('select author_array from articles group by author_array having count(*) < ?', (THRESHOLD,)).fetchall()
     # extract all authors
-    authors = [author for row in rows for author in json.loads(row[0])]
+    authors = [author.lower() for row in rows for author in json.loads(row[0])]
     # remove duplicates
     authors = list(set(authors))
     affected_rows = 0
+    print(f"Number of authors with potentially(!) less than {THRESHOLD} articles: {len(authors)}")
 
     for author in tqdm.tqdm(authors):
         rows = cur.execute("select id from articles where author_array like ?", ("%" + json.dumps(author) + "%",)).fetchall()
@@ -41,6 +42,10 @@ def remove_authors():
                 new_authors = [a for a in old_authors if a.lower() != author]
                 index = [a.lower() for a in old_authors].index(author)
                 new_author_is_abbreviation = [a for i, a in enumerate(old_author_is_abbreviation) if i != index]
+                if len(new_authors) == 0:
+                    new_authors = ["lvz"]
+                    new_author_is_abbreviation = [True]
+
                 cur.execute('update articles set author_array = ?, author_is_abbreviation = ?, updated_at = ? where id = ?', (json.dumps(new_authors), json.dumps(new_author_is_abbreviation), datetime.utcnow().isoformat(), id))
                 affected_rows += cur.rowcount
             con.commit()
