@@ -36,7 +36,7 @@ def write_authors_to_database():
         organizations_matches = [AuthorDTO(author.lower(), author.lower(), None, MatchingType.ORGANIZATION_MATCH) for author in author_array if author in organizations]
         article_authors.extend(organizations_matches)
         article_authors.extend([AuthorDTO(author, None, None, MatchingType.IS_FULL_NAME) for author in author_array if author_is_abbreviation[author_array.index(author)] is False and author.lower() not in [a.name for a in organizations_matches]])
-        article_authors.extend([AuthorDTO(None, author, None, MatchingType.IS_ABBREVIATION) for author in author_array if author_is_abbreviation[author_array.index(author)] is True and author.lower() not in [a.name for a in organizations_matches]])
+        article_authors.extend([AuthorDTO(None, author.lower(), None, MatchingType.IS_ABBREVIATION) for author in author_array if author_is_abbreviation[author_array.index(author)] is True and author.lower() not in [a.name for a in organizations_matches]])
 
         add_article_id(article, article_authors)
         all_authors.extend(article_authors)
@@ -63,6 +63,7 @@ def add_article_id(article, authors):
 
 
 def get_articles(cur):
+    print('fetching articles')
     cur.execute('select id, author_array, author_is_abbreviation, published_at from articles where organization = "lvz" order by published_at asc')
     rows = cur.fetchall()
 
