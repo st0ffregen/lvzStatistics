@@ -10,6 +10,7 @@
 * verknuepfung autoren zu autorenkuerzeln
   * zeilich abhängies mapping wenn applying vom algorithmus, damit abbrs mehrfach vergeben werden können
     * evtl. hier "article count über Zeit"-Verteilung von autor und abbr abgleichen und diff errechnen 
+  * mal die entwicklung des proximity scores über die zeit plotten für ein/zwei autor:innen
   * enablen, dass es abbrs gibt ohne autor name (z.B. joka)
   * evtl. enablen, dass autoren mehr als eine abbr haben dürfen
   * könnte noch ressortzugehörigkeit einbeziehen
