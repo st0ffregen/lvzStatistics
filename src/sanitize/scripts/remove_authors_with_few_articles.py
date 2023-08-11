@@ -20,14 +20,16 @@ def remove_authors():
 
     rows = cur.execute('select author_array from articles group by author_array having count(*) < ?', (THRESHOLD,)).fetchall()
     # extract all authors
-    authors = [author.lower() for row in rows for author in json.loads(row[0])]
+    authors = [author for row in rows for author in json.loads(row[0])]
     # remove duplicates
     authors = list(set(authors))
     affected_rows = 0
-    print(f"Number of authors with potentially(!) less than {THRESHOLD} articles: {len(authors)}")
+    print(f"Number of authors array with authors having potentially(!) less than {THRESHOLD} articles: {len(authors)}")
 
     for author in tqdm.tqdm(authors):
-        rows = cur.execute("select id from articles where author_array like ?", ("%" + json.dumps(author) + "%",)).fetchall()
+        rows = cur.execute("select id, author_array from articles where author_array like ?", ("%" + json.dumps(author) + "%",)).fetchall()
+        # because like is case insensitive, we have to filter the results
+        rows = [row for row in rows if author in json.loads(row[1])]
         ids = [str(row[0]) for row in rows]
         if len(ids) < THRESHOLD:
             # update articles with single authors
@@ -39,8 +41,8 @@ def remove_authors():
                 id = row[0]
                 old_authors = json.loads(row[1])
                 old_author_is_abbreviation = json.loads(row[2])
-                new_authors = [a for a in old_authors if a.lower() != author]
-                index = [a.lower() for a in old_authors].index(author)
+                new_authors = [a for a in old_authors if a != author]
+                index = [a for a in old_authors].index(author)
                 new_author_is_abbreviation = [a for i, a in enumerate(old_author_is_abbreviation) if i != index]
                 if len(new_authors) == 0:
                     new_authors = ["lvz"]
