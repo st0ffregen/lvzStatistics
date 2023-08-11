@@ -188,7 +188,8 @@ def remove_special_cases_from_text(article_text):
 def replace_keywords(article_text, reg):
     match = regex.search(reg, article_text, flags=re.UNICODE)
     if match:
-        article_text = article_text.replace(match.group(1) if len(match.groups()) > 0 else match.captures()[0], 'Von') # TODO: groups und capture unterschied checken
+        replace_text = '' if 'Von' in article_text else 'Von'
+        article_text = article_text.replace(match.group(1) if len(match.groups()) > 0 else match.captures()[0], replace_text) # TODO: groups und capture unterschied checken
     return article_text
 
 

@@ -496,6 +496,13 @@ class TestRetrieveDateFromArticle(unittest.TestCase):
             ),
             retrieve_data_from_article.get_author('macht nicht nur sie sich weiterhin Sorgen. Aus der Leipziger Volkszeitung vom 23.09.2014 kr/T.J')
         )
+        self.assertEqual(
+            (
+                ['Nico Fliegner'],
+                [False]
+            ),
+            retrieve_data_from_article.get_author('Aus der Leipziger Volkszeitung vom 18.02.2014 Von Nico Fliegner')
+        )
 
     def test_get_author_double_author_naming(self):
         self.assertEqual(
