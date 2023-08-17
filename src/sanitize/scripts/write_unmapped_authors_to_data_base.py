@@ -22,11 +22,11 @@ def write_authors_to_database():
     all_authors: list[AuthorDTO] = []
 
     for idx, article in enumerate(tqdm.tqdm(articles)):
-        if article["author_array"] is None:
-            return None
-
-        if article['author_is_abbreviation'] is None:
-            return None
+        if article["author_array"] is None or article['author_is_abbreviation'] is None:
+            if idx > 0 and idx % chunk_size == 0:
+                save_authors_to_db(con, cur, all_authors)
+                all_authors = []
+            continue
 
         article_authors: list[AuthorDTO] = []
 

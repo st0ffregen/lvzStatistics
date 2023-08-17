@@ -34,7 +34,11 @@ def remove_authors():
         if len(ids) < THRESHOLD:
             # update articles with single authors
             cur.execute(f'update articles set author_array = \'["lvz"]\', author_is_abbreviation = \'[true]\', updated_at = ? where author_array not like "%,%" and id in {"(" + ",".join(ids) + ")"}', (datetime.utcnow().isoformat(),))
-            affected_rows += cur.rowcount
+            n_updated_rows = cur.rowcount
+            affected_rows += n_updated_rows
+            if n_updated_rows == len(ids):
+                continue
+
             # update articles with multiple authors
             row_to_update = cur.execute(f'select id, author_array, author_is_abbreviation from articles where author_array like "%,%" and id in {"(" + ",".join(ids) + ")"}').fetchall()
             for row in row_to_update:

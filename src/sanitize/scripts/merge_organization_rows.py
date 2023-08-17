@@ -15,10 +15,10 @@ if __name__ == '__main__':
     organizations = ['lvz', 'dpa', 'dnn', 'haz', 'maz', 'rnd', 'np', 'oz', 'ln', 'kn', 'gtet', 'paz', 'wazaz', 'sid', 'op', 'sn', 'mazonline', 'LVZ-Online', 'daz', 'oaz', 'ovz']
     con, cur = get_db_connection()
     for organization in organizations:
-        organization = organization.upper()
+        organization = organization.lower()
         print(f"Processing {organization}")
 
-        ids = cur.execute('select id from unmapped_authors a where upper(a.name) = ? or upper(a.abbreviation) = ?', (organization, organization)).fetchall()
+        ids = cur.execute('select id from unmapped_authors a where lower(a.name) = ? or lower(a.abbreviation) = ?', (organization, organization)).fetchall()
 
         if len(ids) == 0:
             print(f"No entries for {organization} found")
@@ -33,7 +33,7 @@ if __name__ == '__main__':
         print(f"Affected rows: {cur.rowcount}")
 
         print("Deleting entries in authors table")
-        cur.execute('delete from unmapped_authors where (upper(name) = ? or upper(abbreviation) = ?) and id != ?', (organization, organization, first_id))
+        cur.execute('delete from unmapped_authors where (lower(name) = ? or lower(abbreviation) = ?) and id != ?', (organization, organization, first_id))
         print(f"Affected rows: {cur.rowcount}")
 
         con.commit()
