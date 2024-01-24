@@ -3,12 +3,12 @@ from unittest.mock import Mock
 
 from src.utils.author_mapping import determine_department_entity_shares
 from src.author_mapping.tests.utils import mock_database
-from src.author_mapping.tests.utils import test_data_for_map_abbreviations_to_names
+from src.author_mapping.tests.utils import test_data_for_department_score
 
 
 class TestDetermineDepartmentEntityShares(TestCase):
 
-    articles = test_data_for_map_abbreviations_to_names.articles
+    articles = test_data_for_department_score.articles
 
     def setUp(self):
         self.con, self.cur = mock_database.fill_database(self.articles)
@@ -30,4 +30,4 @@ class TestDetermineDepartmentEntityShares(TestCase):
         departments_scaler_score = determine_department_entity_shares.determine_departments_abbreviation_and_full_name_shares(self.cur)
 
         self.assertTrue(['Borna', 0.5, 0.5] in departments_scaler_score[['department', 'abbreviation_share', 'full_name_share']].values.tolist())
-        self.assertTrue(['Sport', 0.75, 0.25] in departments_scaler_score[['department', 'abbreviation_share', 'full_name_share']].values.tolist())
+        self.assertTrue(['Sport', 5/6, 1/6] in departments_scaler_score[['department', 'abbreviation_share', 'full_name_share']].values.tolist())

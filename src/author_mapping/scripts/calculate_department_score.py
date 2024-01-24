@@ -13,26 +13,18 @@ SMALL_DEPARTMENT_NUMBER_PENALTY_Y_INTERSECT = 0.2
 SMALL_DEPARTMENT_NUMBER_PENALTY_SLOPE = -0.05
 
 
-# This script does the final mapping between abbreviations and names.
-# It writes to the author_identities table in the database.
-# It calculates the frequency score as well as the department score for the mapping.
+# This calculates the department score for each mapping.
 
-def main():
-    map_abbreviations_to_names()
-
-def map_abbreviations_to_names():
+def calculate_department_score() -> pd.DataFrame:
     con, cur = get_db_connection()
-    department_scores = calculate_department_score(cur)
 
+    department_affiliation = get_data(cur)
 
-def calculate_department_score(cur) -> pd.DataFrame:
-    department_affiliation = get_data_for_department_score(cur)
-
-    department_affiliation = prepare_data_for_department_score(department_affiliation)
+    department_affiliation = prepare_data(department_affiliation)
 
     name_abbreviation_dict = get_full_name_abbreviations_dict(department_affiliation)
 
-    department_affiliation = clean_data_for_department_scoring(department_affiliation)
+    department_affiliation = clean_data(department_affiliation)
 
     results = pd.DataFrame(
         columns=['name', 'abbreviation', 'wasserstein_distance', 'n_departments', 'n_not_overlapping_departments',
@@ -137,7 +129,7 @@ def normalize_department_score_results(results: pd.DataFrame) -> pd.DataFrame:
     return results
 
 
-def clean_data_for_department_scoring(department_affiliation: pd.DataFrame) -> pd.DataFrame:
+def clean_data(department_affiliation: pd.DataFrame) -> pd.DataFrame:
 
     # remove rows where department equals "Region" or "Nachrichten" for being to unspecific
     department_affiliation = department_affiliation[department_affiliation.department != 'Region']
@@ -148,7 +140,7 @@ def clean_data_for_department_scoring(department_affiliation: pd.DataFrame) -> p
     return department_affiliation
 
 
-def prepare_data_for_department_score(department_affiliation: pd.DataFrame) -> pd.DataFrame:
+def prepare_data(department_affiliation: pd.DataFrame) -> pd.DataFrame:
 
     # get names where matching_type is only IS_FULL_NAME and never has another value
     not_matched_authors = department_affiliation.groupby('name').filter(
@@ -163,7 +155,6 @@ def prepare_data_for_department_score(department_affiliation: pd.DataFrame) -> p
     return department_affiliation
 
 
-
 def get_full_name_abbreviations_dict(department_affiliation):
 
     # Get unique name, abbreviation pairs where abbreviation or name is not nan
@@ -174,19 +165,20 @@ def get_full_name_abbreviations_dict(department_affiliation):
     return name_abbreviation_dict
 
 
-
 def scale_department_count(department_count: pd.DataFrame, departments_scaler_score: pd.DataFrame, key) -> pd.DataFrame:
     # apply the scaling to each row
     department_count["count"] = department_count.apply(lambda x: scale_function(x, departments_scaler_score, key), axis=1)
 
     return department_count
 
+
 def scale_function(row, departments_scaler_score, share_key):
     # Note: does not scale if department name is not in departments_scaler_score
 
     return int(row["count"] * 0.5/departments_scaler_score[departments_scaler_score["department"] == row["department"]][share_key].values[0]) if row["department"] in departments_scaler_score["department"].tolist() else row["count"]
 
-def get_data_for_department_score(cur):
+
+def get_data(cur):
 
     # get all articles with affiliated authors that are not organizations
     rows = cur.execute(
@@ -203,9 +195,3 @@ def get_db_connection():
     con = sqlite3.connect('../../../data/interim/articles_with_author_mapping.db')
     cur = con.cursor()
     return con, cur
-
-
-
-
-if __name__ == "__main__":
-    main()
