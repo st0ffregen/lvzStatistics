@@ -1,16 +1,15 @@
+from collections import Counter
 from unittest import TestCase
 from unittest.mock import Mock
-import sqlite3
-from collections import Counter
-from datetime import datetime
-import json
-from src.sanitize.tests import test_data
+
 from src.author_mapping.scripts import search_for_proximity_full_name
+from src.author_mapping.tests.utils import mock_database
 from src.models.AuthorDTO import AuthorDTO
 from src.models.MatchingType import MatchingType
+from src.sanitize.tests import test_data
 
 
-class TestWriteAuthorsToDataBase(TestCase):
+class TestSearchForProximityFullName(TestCase):
 
     articles = test_data.articles
 
@@ -20,46 +19,7 @@ class TestWriteAuthorsToDataBase(TestCase):
     })
 
     def setUp(self):
-        # Create a temporary in-memory SQLite database for testing
-        self.con = sqlite3.connect(':memory:')
-        self.cur = self.con.cursor()
-
-        # simplified tables for testing
-        self.cur.execute(
-            'CREATE TABLE "articles" ( "id" INTEGER, "url" TEXT NOT NULL, "organization" TEXT NOT NULL, "author_array" TEXT, "author_is_abbreviation" TEXT, "published_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL)')
-        self.cur.execute(
-            'CREATE TABLE "unmapped_authors" ( "id" INTEGER NOT NULL UNIQUE, "name" TEXT, "abbreviation" TEXT, "matching_certainty" NUMERIC, "matching_type" TEXT, "created_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL, PRIMARY KEY("id" AUTOINCREMENT))')
-        self.cur.execute(
-            'CREATE TABLE "article_authors" ( "id" INTEGER NOT NULL UNIQUE, "article_id" INTEGER NOT NULL, "author_id" INTEGER NOT NULL, "created_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL, UNIQUE("article_id","author_id"), PRIMARY KEY("id" AUTOINCREMENT))')
-        self.con.commit()
-
-        for article in self.articles:
-            updated_at = datetime.utcnow().isoformat()
-            self.cur.execute(
-                'INSERT INTO articles (id, url, author_array, author_is_abbreviation, published_at, organization, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                (article['id'], article['url'], json.dumps(article['author_array']), json.dumps(article['author_is_abbreviation']),
-                 article['published_at'], article['organization'], updated_at))
-
-            for author in article['author_array']:
-                abbr = None
-
-                if author == 'lvz':
-                    matching_type = MatchingType.ORGANIZATION_MATCH.name
-                    abbr = author
-                elif article['author_is_abbreviation'][article['author_array'].index(author)]:
-                    matching_type = MatchingType.IS_ABBREVIATION.name
-                    abbr = author
-                    author = None
-                else:
-                    matching_type = MatchingType.IS_FULL_NAME.name
-
-                self.cur.execute('insert into unmapped_authors values (?,?,?,?,?,?,?)',
-                                 (None, author, abbr, None, matching_type, updated_at, updated_at))
-
-                self.cur.execute('insert into article_authors values (?,?,?,?,?)',
-                                 (None, article['id'], self.cur.lastrowid, updated_at, updated_at))
-
-        self.con.commit()
+        self.con, self.cur = mock_database.fill_database()
 
     def tearDown(self):
         self.cur.close()
