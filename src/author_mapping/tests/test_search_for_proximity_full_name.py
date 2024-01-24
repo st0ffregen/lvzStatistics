@@ -6,12 +6,12 @@ from src.author_mapping.scripts import search_for_proximity_full_name
 from src.author_mapping.tests.utils import mock_database
 from src.models.AuthorDTO import AuthorDTO
 from src.models.MatchingType import MatchingType
-from src.sanitize.tests import test_data
+from src.author_mapping.tests.utils import test_data_for_proximity_full_name
 
 
 class TestSearchForProximityFullName(TestCase):
 
-    articles = test_data.articles
+    articles = test_data_for_proximity_full_name.articles
 
     authors_with_frequency = Counter({
         'Mark Daniel': 2, 'Hannah Suppa': 1, 'Theresa Moosmann': 2, 'Tilmann Prüfer': 1, 'Tim Meyer': 1,
@@ -19,7 +19,7 @@ class TestSearchForProximityFullName(TestCase):
     })
 
     def setUp(self):
-        self.con, self.cur = mock_database.fill_database()
+        self.con, self.cur = mock_database.fill_database(self.articles)
 
     def tearDown(self):
         self.cur.close()

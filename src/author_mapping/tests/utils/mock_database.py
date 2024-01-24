@@ -2,16 +2,13 @@ import json
 import sqlite3
 from datetime import datetime
 
-from src.author_mapping.tests.utils import test_data
 from src.models.MatchingType import MatchingType
 
 
-def fill_database():
+def fill_database(articles):
     # Create a temporary in-memory SQLite database for testing
     con = sqlite3.connect(':memory:')
     cur = con.cursor()
-
-    articles = test_data.articles
 
     # simplified tables for testing
     cur.execute(
