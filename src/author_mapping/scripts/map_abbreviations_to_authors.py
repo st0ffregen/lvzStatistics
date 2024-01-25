@@ -30,7 +30,7 @@ def map_abbreviations_to_authors(db_file_path):
     print(f"Removed {len(self_referencing_authors)} self referencing nodes")
 
     # TODO: all scores should aligned w.r.t. their positiv and negative values and its impact (maybe in that specific script)
-    authors["score"] = authors["department_score"] - authors["certainty"] - authors["frequency_score"]
+    authors["score"] = -1 * (authors["department_score_normalized"] + authors["certainty"] + authors["frequency_score_normalized"]) # -1 factor because minimum_weight_full_matching minimizes
 
     # normalize score
     authors["normalized_score"] = (authors["score"] - authors["score"].min()) / (authors["score"].max() - authors["score"].min())
@@ -66,7 +66,7 @@ def map_abbreviations_to_authors(db_file_path):
     print(f"remaining unmatched abbreviations {remaining_abbrs}")
 
     # return values for visualization and evaluation
-    return authors_frequency_score, authors_department_score, author_mapping, self_referencing_authors, remaining_abbrs
+    return authors, authors_frequency_score, authors_department_score, author_mapping, self_referencing_authors, remaining_abbrs
 
 
 

@@ -33,6 +33,9 @@ def calculate_frequency_score(db_file_path="../../../data/interim/articles_with_
     # TODO: Rethink, if multiplication is best choice here
     authors["frequency_score"] = authors["full_name_pointing_to_abbreviation_share"] * authors["abbreviation_pointing_to_full_name_share"]
 
+    # normalize frequency_score
+    authors["frequency_score_normalized"] = (authors["frequency_score"] - authors["frequency_score"].min()) / (authors["frequency_score"].max() - authors["frequency_score"].min())
+
     return authors
 
 

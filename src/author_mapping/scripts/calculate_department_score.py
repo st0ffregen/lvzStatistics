@@ -83,23 +83,24 @@ def calculate_department_score(db_file_path="../../../data/interim/articles_with
         # if the two lists do not have any overlap, set the distance to one (worst case) as it is the same for the worst normalized score
         # test if any element in abbr_department_count_list is in full_name_department_count_list
         if not any(elem in name_department_list for elem in abbr_department_list):
-            score = 1
+            score = 0
             # add to results with loc
             results.loc[len(results)] = [name, abbreviation, np.nan, n_departments_for_author, n_not_overlapping_departments,
-                                         np.nan, 1]
+                                         np.nan, score]
             continue
 
         # compare with wasserstein metric
         w_distance = wasserstein_distance(range(0, len(name_department_count_list)),
                                           range(0, len(abbr_department_count_list)), name_department_count_list,
                                           abbr_department_count_list)
+        w_distance = 1 / (1 + w_distance)  # invert wasserstein distance to get a score between 0 and 1 with 1 being the best value
 
         # calculate penalization score
         # construct linear function that penalizes the difference in department arrays
         # it computes the score be taking the percentage of not overlapping departments
         # it gets scaled by a factor alpha
         small_department_number_penalty = max(0, SMALL_DEPARTMENT_NUMBER_PENALTY_Y_INTERSECT + (SMALL_DEPARTMENT_NUMBER_PENALTY_SLOPE * n_departments_for_author))  # add a small penalty for small numbers of departments
-        penalization_score = PENALIZATION_SCORE_SCALAR * (n_not_overlapping_departments / n_departments_for_author + small_department_number_penalty)
+        penalization_score = PENALIZATION_SCORE_SCALAR * (n_not_overlapping_departments / n_departments_for_author - small_department_number_penalty)
 
         # fill score later after normalization of both wasserstein distance and penalization score
         score = np.nan
@@ -124,8 +125,11 @@ def normalize_department_score_results(results: pd.DataFrame) -> pd.DataFrame:
         "penalization_score"].min()) / (results["penalization_score"].max() - results["penalization_score"].min())
 
     # compute score for rows where it is not set to 1
-    results.loc[results["department_score"].isna(), "department_score"] = 1 / 2 * (
-            results["wasserstein_distance_normalized"] + results["penalization_score_normalized"])
+    results.loc[results["department_score"].isna(), "department_score"] = results["wasserstein_distance_normalized"] - results["penalization_score_normalized"]
+
+    # normalize department score
+    results["department_score_normalized"] = (results["department_score"] - results[
+        "department_score"].min()) / (results["department_score"].max() - results["department_score"].min())
 
     return results
 
@@ -150,7 +154,7 @@ def prepare_data(department_affiliation: pd.DataFrame) -> pd.DataFrame:
     # remove rows where name in names_with_only_full_name
     department_affiliation = department_affiliation[~department_affiliation["name"].isin(not_matched_authors["name"].tolist())]
 
-    department_affiliation["department"] = department_affiliation["department"].apply(lambda x: json.loads(x))
+    department_affiliation.loc[:, "department"] = department_affiliation["department"].apply(lambda x: json.loads(x))
     department_affiliation = department_affiliation.explode('department')
 
     return department_affiliation
