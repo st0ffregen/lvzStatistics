@@ -1,11 +1,11 @@
-import sqlite3
 import pandas as pd
 
 from src.models.MatchingType import MatchingType
+from src.utils.get_db import get_db_connection
 
 
-def calculate_frequency_score():
-    con, cur = get_db_connection()
+def calculate_frequency_score(db_file_path="../../../data/interim/articles_with_author_mapping.d"):
+    con, cur = get_db_connection(db_file_path)
     authors = get_abbreviations_with_full_names(cur)
 
     authors["full_name_pointing_to_abbreviation_count"] = authors.groupby(["full_name", "abbreviation"])["full_name"].transform(
@@ -42,9 +42,3 @@ def get_abbreviations_with_full_names(cur):
     authors = pd.DataFrame(columns=["id", "full_name", "abbreviation", "certainty"], data=rows)
     authors.set_index("id", inplace=True)
     return authors
-
-
-def get_db_connection():
-    con = sqlite3.connect('../../../data/interim/articles_with_author_mapping.db')
-    cur = con.cursor()
-    return con, cur

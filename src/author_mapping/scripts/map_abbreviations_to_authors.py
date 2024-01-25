@@ -7,9 +7,9 @@ from src.author_mapping.scripts import calculate_department_score
 DUMMY_NODE_WEIGHT = 0.8
 
 
-def map_abbreviations_to_authors():
-    authors_frequency_score = calculate_frequency_score.calculate_frequency_score()
-    authors_department_score = calculate_department_score.calculate_department_score()
+def map_abbreviations_to_authors(db_file_path):
+    authors_frequency_score = calculate_frequency_score.calculate_frequency_score(db_file_path)
+    authors_department_score = calculate_department_score.calculate_department_score(db_file_path)
 
     # test if authors_frequency_score and authors_department_score have the same name, abbreviation pairs
     frequency_pairs = [(el[0], el[1]) for el in authors_frequency_score[['full_name', 'abbreviation']].values.tolist()]
@@ -105,4 +105,4 @@ def create_graph(authors):
 
 
 if __name__ == '__main__':
-    map_abbreviations_to_authors()
+    map_abbreviations_to_authors("../../../data/interim/articles_with_author_mapping.db")

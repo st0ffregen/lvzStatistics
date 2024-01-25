@@ -6,6 +6,7 @@ import json
 from src.models.MatchingType import MatchingType
 from scipy.stats import wasserstein_distance
 from src.utils.author_mapping.determine_department_entity_shares import determine_departments_abbreviation_and_full_name_shares
+from src.utils.get_db import get_db_connection
 
 DEPARTMENT_THRESHOLD = 10
 PENALIZATION_SCORE_SCALAR = 1
@@ -15,8 +16,8 @@ SMALL_DEPARTMENT_NUMBER_PENALTY_SLOPE = -0.05
 
 # This calculates the department score for each mapping.
 
-def calculate_department_score() -> pd.DataFrame:
-    con, cur = get_db_connection()
+def calculate_department_score(db_file_path="../../../data/interim/articles_with_author_mapping.db") -> pd.DataFrame:
+    con, cur = get_db_connection(db_file_path)
 
     department_affiliation = get_data(cur)
 
@@ -189,9 +190,3 @@ def get_data(cur):
         columns=['id', 'department', 'published_at', 'name', 'abbreviation', 'matching_type'], data=rows)
 
     return department_affiliation
-
-
-def get_db_connection():
-    con = sqlite3.connect('../../../data/interim/articles_with_author_mapping.db')
-    cur = con.cursor()
-    return con, cur
