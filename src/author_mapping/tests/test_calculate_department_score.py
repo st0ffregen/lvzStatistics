@@ -61,5 +61,5 @@ class TestCalculateDepartmentScore(TestCase):
     def test_calculate_department_score(self):
         results = calculate_department_score.calculate_department_score()
 
-        self.assertTrue(['Theresa Moosmann', 'tm', 3, 1, 1/3] in results[['name', 'abbreviation', 'n_departments', 'n_not_overlapping_departments', 'penalization_score']].values.tolist())
-        self.assertFalse(np.isnan(results[results["name"] == "Theresa Moosmann"]["score"].values[0]))
+        self.assertTrue(['Theresa Moosmann', 'tm', 3, 1, 1/3] in results[['full_name', 'abbreviation', 'n_departments', 'n_not_overlapping_departments', 'penalization_score']].values.tolist())
+        self.assertFalse(np.isnan(results[results["full_name"] == "Theresa Moosmann"]["department_score"].values[0]))

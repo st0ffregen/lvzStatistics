@@ -27,8 +27,8 @@ def calculate_department_score() -> pd.DataFrame:
     department_affiliation = clean_data(department_affiliation)
 
     results = pd.DataFrame(
-        columns=['name', 'abbreviation', 'wasserstein_distance', 'n_departments', 'n_not_overlapping_departments',
-                 'penalization_score', 'score'])
+        columns=['full_name', 'abbreviation', 'wasserstein_distance', 'n_departments', 'n_not_overlapping_departments',
+                 'penalization_score', 'department_score'])
 
     departments_scaler_score = determine_departments_abbreviation_and_full_name_shares(cur)
 
@@ -123,7 +123,7 @@ def normalize_department_score_results(results: pd.DataFrame) -> pd.DataFrame:
         "penalization_score"].min()) / (results["penalization_score"].max() - results["penalization_score"].min())
 
     # compute score for rows where it is not set to 1
-    results.loc[results["score"].isna(), "score"] = 1 / 2 * (
+    results.loc[results["department_score"].isna(), "department_score"] = 1 / 2 * (
             results["wasserstein_distance_normalized"] + results["penalization_score_normalized"])
 
     return results
@@ -159,7 +159,7 @@ def get_full_name_abbreviations_dict(department_affiliation):
 
     # Get unique name, abbreviation pairs where abbreviation or name is not nan
     name_abbreviation_dict = \
-        department_affiliation[~department_affiliation["name"].isna()][~department_affiliation["abbreviation"].isna()][
+        department_affiliation[(~department_affiliation["name"].isna()) & (~department_affiliation["abbreviation"].isna())][
             ["name", "abbreviation"]].drop_duplicates().values.tolist()
 
     return name_abbreviation_dict
