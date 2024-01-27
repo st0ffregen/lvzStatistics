@@ -22,14 +22,12 @@ def map_abbreviations_to_authors(db_file_path):
     print(f"Found {n_authors} authors with both frequency and department score")
 
     # save self referencing nodes to add them later
-    # TODO: add them later on
     self_referencing_authors = authors[authors["full_name"].str.lower() == authors["abbreviation"].str.lower()]
 
     # Remove them from authors
     authors = authors[authors["full_name"].str.lower() != authors["abbreviation"].str.lower()]
     print(f"Removed {len(self_referencing_authors)} self referencing nodes")
 
-    # TODO: all scores should aligned w.r.t. their positiv and negative values and its impact (maybe in that specific script)
     authors["score"] = -1 * (authors["department_score_normalized"] + authors["certainty"] + authors["frequency_score_normalized"]) # -1 factor because minimum_weight_full_matching minimizes
 
     # normalize score
@@ -49,21 +47,29 @@ def map_abbreviations_to_authors(db_file_path):
     author_mapping = author_mapping[~author_mapping["abbreviation"].str.contains("dummy")]
 
     print(f"after dummy removal: author_mapping has {author_mapping.shape[0]} rows")
-    print(f"There are {len(assigned_graph.nodes) - (len(assigned_graph.edges) * 2)} abbreviations that were not matched")
 
+    # add self referencing authors again
+    author_mapping = pd.concat([author_mapping, self_referencing_authors[["full_name", "abbreviation"]]])
+    print(f"after adding self referencing authors: author_mapping has {author_mapping.shape[0]} rows")
+
+    print(f"There are {len(assigned_graph.nodes) - (len(assigned_graph.edges) * 2)} abbreviations that were not matched")
     # print not matched abbreviations
-    print([node for node in assigned_graph.nodes if assigned_graph.degree(node) == 0])
+    print(f" The following abbreviations were not matched: {[node for node in assigned_graph.nodes if assigned_graph.degree(node) == 0]}")
 
     # test if these abbreviations have only one edge in the old graph. If so, we can append them to that author.
     # assumes that the names got assigned a more fitting abbreviation but these here do also belong to that name
-    # TODO: add them. Implement a treshold for a minimal score?
+    # Implement a treshold for a minimal score?
     unmatched_abbrs_with_only_one_edge = [node for node in assigned_graph.nodes if
                                           assigned_graph.degree(node) == 0 and len(list(graph.neighbors(node))) == 1]
     print(f"{len(unmatched_abbrs_with_only_one_edge)} abbreviations have only one edge in the old graph")
+    # add them
+    for abbr in unmatched_abbrs_with_only_one_edge:
+        print(f"add abbreviation {abbr} to author {list(graph.neighbors(abbr))[0]}")
+        author_mapping.loc[len(author_mapping)] = [list(graph.neighbors(abbr))[0], abbr]
 
     # list remaining abbreviations
     remaining_abbrs = [node for node in assigned_graph.nodes if assigned_graph.degree(node) == 0 and len(list(graph.neighbors(node))) > 1]
-    print(f"remaining unmatched abbreviations {remaining_abbrs}")
+    print(f"{len(remaining_abbrs)} remain unmatched: {remaining_abbrs}")
 
     # return values for visualization and evaluation
     return authors, authors_frequency_score, authors_department_score, author_mapping, self_referencing_authors, remaining_abbrs
