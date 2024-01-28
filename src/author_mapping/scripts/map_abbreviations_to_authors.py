@@ -8,7 +8,10 @@ DUMMY_NODE_WEIGHT = 0.8
 
 
 def map_abbreviations_to_authors(db_file_path):
+    print("Start mapping abbreviations to authors")
+    print("Compute frequency score")
     authors_frequency_score = calculate_frequency_score.calculate_frequency_score(db_file_path)
+    print("Compute department score")
     authors_department_score = calculate_department_score.calculate_department_score(db_file_path)
 
     # test if authors_frequency_score and authors_department_score have the same name, abbreviation pairs
