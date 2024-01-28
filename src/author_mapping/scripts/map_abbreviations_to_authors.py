@@ -1,8 +1,13 @@
 import networkx as nx
 import pandas as pd
+from datetime import datetime
+from tqdm import tqdm
 
 from src.author_mapping.scripts import calculate_frequency_score
 from src.author_mapping.scripts import calculate_department_score
+from src.utils.get_db import get_db_connection
+from src.sanitize.scripts.write_unmapped_authors_to_data_base import get_articles
+
 
 DUMMY_NODE_WEIGHT = 0.8
 
@@ -67,12 +72,20 @@ def map_abbreviations_to_authors(db_file_path):
     print(f"{len(unmatched_abbrs_with_only_one_edge)} abbreviations have only one edge in the old graph")
     # add them
     for abbr in unmatched_abbrs_with_only_one_edge:
-        print(f"add abbreviation {abbr} to author {list(graph.neighbors(abbr))[0]}")
         author_mapping.loc[len(author_mapping)] = [list(graph.neighbors(abbr))[0], abbr]
+    print(f"after adding abbreviations with only one edge: author_mapping has {author_mapping.shape[0]} rows")
 
     # list remaining abbreviations
     remaining_abbrs = [node for node in assigned_graph.nodes if assigned_graph.degree(node) == 0 and len(list(graph.neighbors(node))) > 1]
     print(f"{len(remaining_abbrs)} remain unmatched: {remaining_abbrs}")
+
+    print(f"write authors dataframe to csv file")
+    authors.to_csv("../../../reports/data_sheets/authors.csv", index=False)
+
+    print(f"write author_mapping to {db_file_path}")
+    write_to_database(authors=authors, author_mapping=author_mapping)
+
+    print("Finished mapping abbreviations to authors")
 
     # return values for visualization and evaluation
     return authors, authors_frequency_score, authors_department_score, author_mapping, self_referencing_authors, remaining_abbrs
@@ -111,6 +124,157 @@ def create_graph(authors):
     print(f"constructed graph with {len(graph.nodes)} nodes and {len(graph.edges)} edges")
 
     return graph, full_names_list, abbreviations_list
+
+
+def write_to_database(authors, author_mapping, db_file_path="../../../data/interim/articles_with_author_mapping.db"):
+    con, cur = get_db_connection(db_file_path)
+    # insert mapped authors, use tqdm
+
+    insert_mapped_authors(cur, author_mapping=author_mapping)
+
+    insert_unmapped_names(cur, author_mapping=author_mapping, authors=authors)
+
+    insert_unmapped_abbreviations(cur, author_mapping=author_mapping, authors=authors)
+
+    print("persist changes to database")
+    con.commit()
+
+    all_articles = get_articles(cur)
+    for article in tqdm(all_articles):
+        article_id = article['id']
+        article_authors = article['author_array']
+        article_authors_are_abbreviations = article['author_is_abbreviation']
+        for author in article_authors:
+            if article_authors_are_abbreviations[article_authors.index(author)] is False:
+                cur.execute('select an.id from author_names an where an.name_id = (select id from names where name = ?)', (author,))
+            else:
+                cur.execute('select aa.id from author_abbreviations aa where aa.abbreviation_id = (select id from abbreviations where abbreviation = ?)', (author,))
+
+            author_id = cur.fetchone()
+            if author_id is None:
+                raise Exception(f"author {author} is not in database")
+
+            author_id = author_id[0]
+            time = datetime.utcnow().isoformat()
+            cur.execute('insert into mapped_article_authors values (?,?,?,?,?)', (None, article_id, author_id, time, time))
+
+    print("persist changes to database")
+    con.commit()
+
+def insert_mapped_authors(cur, author_mapping):
+    print(f"insert {author_mapping.shape[0]} mapped authors into database")
+    for index, row in tqdm(author_mapping.iterrows(), total=len(author_mapping)):
+        name, abbreviation = row["full_name"], row["abbreviation"]
+
+        # test if name or abbreviation is already in database
+        cur.execute('select * from names where name=?', (name,))
+        name_id = cur.fetchone()
+        cur.execute('select * from abbreviations where abbreviation=?', (abbreviation,))
+        abbreviation_id = cur.fetchone()
+
+        # if both is already in database, throw error
+        if name_id is not None and abbreviation_id is not None:
+            raise Exception(f"Both name {name} and abbreviation {abbreviation} are already in database")
+
+        # if only name is already in database, add abbreviation to author_abbreviations
+        if name_id is not None:
+            name_id = name_id[0]
+            cur.execute('select * from author_names where name_id=?', (name_id,))
+            author_id = cur.fetchone()
+            if author_id is None:
+                # somehow the name got added but no author_names entry was created, raise exception
+                raise Exception(f"Name {name} is in database but no author_names entry was created")
+
+            author_id = author_id[1]
+
+            # insert into abbreviations
+            time = datetime.utcnow().isoformat()
+            cur.execute('insert into abbreviations values (?,?,?,?)', (None, abbreviation, time, time))
+            abbreviation_id = cur.lastrowid
+
+            cur.execute('insert into author_abbreviations values (?,?,?,?,?)',
+                        (None, author_id, abbreviation_id, time, time))
+            continue
+
+        # if only abbreviation is already in database, add name to author_names
+        if abbreviation_id is not None:
+            abbreviation_id = abbreviation_id[0]
+            cur.execute('select * from author_abbreviations where abbreviation_id=?', (abbreviation_id,))
+            author_id = cur.fetchone()
+
+            if author_id is None:
+                # somehow the abbreviation got added but no author_abbreviations entry was created, raise exception
+                raise Exception(f"Abbreviation {abbreviation} is in database but no author_abbreviations entry was created")
+
+            author_id = author_id[1]
+
+            # insert into names
+            time = datetime.utcnow().isoformat()
+            cur.execute('insert into names values (?,?,?,?)', (None, name, time, time))
+            name_id = cur.lastrowid
+
+            cur.execute('insert into author_names values (?,?,?,?,?)', (None, author_id, name_id, time, time))
+            continue
+
+        time = datetime.utcnow().isoformat()
+        # create new author entity
+        cur.execute('insert into authors values (?,?,?)', (None, time, time))
+        author_id = cur.lastrowid
+
+        # insert into names
+        cur.execute('insert into names values (?,?,?,?)', (None, name, time, time))
+        name_id = cur.lastrowid
+
+        # insert into author_names
+        cur.execute('insert into author_names values (?,?,?,?,?)', (None, author_id, name_id, time, time))
+
+        # insert into abbreviations
+        cur.execute('insert into abbreviations values (?,?,?,?)', (None, abbreviation, time, time))
+        abbreviation_id = cur.lastrowid
+
+        # insert into author_abbreviations
+        cur.execute('insert into author_abbreviations values (?,?,?,?,?)',
+                    (None, author_id, abbreviation_id, time, time))
+
+
+def insert_unmapped_names(cur, author_mapping, authors):
+    # insert unmapped authors
+    unmapped_names = authors[~authors["full_name"].isin(author_mapping["full_name"])]
+    print(f"insert {unmapped_names.shape[0]} unmapped names into database")
+    for index, row in tqdm(unmapped_names.iterrows(), total=len(unmapped_names)):
+        name = row["full_name"]
+        time = datetime.utcnow().isoformat()
+        # create new author entity
+        cur.execute('insert into authors values (?,?,?)', (None, time, time))
+        author_id = cur.lastrowid
+
+        # insert into names
+        cur.execute('insert into names values (?,?,?,?)', (None, name, time, time))
+        name_id = cur.lastrowid
+
+        # insert into author_names
+        cur.execute('insert into author_names values (?,?,?,?,?)', (None, author_id, name_id, time, time))
+
+
+def insert_unmapped_abbreviations(cur, author_mapping, authors):
+    # insert unmapped abbreviations
+    unmapped_abbreviations = authors[~authors["abbreviation"].isin(author_mapping["abbreviation"])]
+    print(f"insert {unmapped_abbreviations.shape[0]} unmapped abbreviations into database")
+    for index, row in tqdm(unmapped_abbreviations.iterrows(), total=len(unmapped_abbreviations)):
+        abbreviation = row["abbreviation"]
+        time = datetime.utcnow().isoformat()
+
+        # create new author entity
+        cur.execute('insert into authors values (?,?,?)', (None, time, time))
+        author_id = cur.lastrowid
+
+        # insert into abbreviations
+        cur.execute('insert into abbreviations values (?,?,?,?)', (None, abbreviation, time, time))
+        abbreviation_id = cur.lastrowid
+
+        # insert into author_abbreviations
+        cur.execute('insert into author_abbreviations values (?,?,?,?,?)',
+                    (None, author_id, abbreviation_id, time, time))
 
 
 if __name__ == '__main__':

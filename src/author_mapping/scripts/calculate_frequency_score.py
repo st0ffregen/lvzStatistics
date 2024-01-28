@@ -4,7 +4,7 @@ from src.models.MatchingType import MatchingType
 from src.utils.get_db import get_db_connection
 
 
-def calculate_frequency_score(db_file_path="../../../data/interim/articles_with_author_mapping.d"):
+def calculate_frequency_score(db_file_path="../../../data/interim/articles_with_author_mapping.db"):
     con, cur = get_db_connection(db_file_path)
     authors = get_abbreviations_with_full_names(cur)
 
