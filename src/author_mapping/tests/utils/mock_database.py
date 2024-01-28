@@ -16,7 +16,7 @@ def fill_database(articles):
     cur.execute(
         'CREATE TABLE "unmapped_authors" ( "id" INTEGER NOT NULL UNIQUE, "name" TEXT, "abbreviation" TEXT, "matching_certainty" NUMERIC, "matching_type" TEXT, "created_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL, PRIMARY KEY("id" AUTOINCREMENT))')
     cur.execute(
-        'CREATE TABLE "article_authors" ( "id" INTEGER NOT NULL UNIQUE, "article_id" INTEGER NOT NULL, "author_id" INTEGER NOT NULL, "created_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL, UNIQUE("article_id","author_id"), PRIMARY KEY("id" AUTOINCREMENT))')
+        'CREATE TABLE "unmapped_article_authors" ( "id" INTEGER NOT NULL UNIQUE, "article_id" INTEGER NOT NULL, "author_id" INTEGER NOT NULL, "created_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL, UNIQUE("article_id","author_id"), PRIMARY KEY("id" AUTOINCREMENT))')
     con.commit()
 
     for article in articles:
@@ -43,7 +43,7 @@ def fill_database(articles):
             cur.execute('insert into unmapped_authors values (?,?,?,?,?,?,?)',
                              (None, author, abbr, None, matching_type, updated_at, updated_at))
 
-            cur.execute('insert into article_authors values (?,?,?,?,?)',
+            cur.execute('insert into unmapped_article_authors values (?,?,?,?,?)',
                              (None, article['id'], cur.lastrowid, updated_at, updated_at))
 
     con.commit()

@@ -52,7 +52,7 @@ def prepare_data(departments):
 def get_data(cur):
     # get all articles with affiliated authors that are not organizations
     rows = cur.execute(
-        "SELECT ar.id, ar.article_namespace_array, ar.published_at, a.name, a.abbreviation, a.matching_type FROM articles ar join article_authors aa on ar.id = aa.article_id join unmapped_authors a on aa.author_id = a.id where a.matching_type != ?",
+        "SELECT ar.id, ar.article_namespace_array, ar.published_at, a.name, a.abbreviation, a.matching_type FROM articles ar join unmapped_article_authors aa on ar.id = aa.article_id join unmapped_authors a on aa.author_id = a.id where a.matching_type != ?",
         (MatchingType.ORGANIZATION_MATCH.name,)).fetchall()
 
     departments = pd.DataFrame(columns=['id', 'department', 'published_at', 'name', 'abbreviation', 'matching_type'],

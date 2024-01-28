@@ -52,7 +52,7 @@ def save_authors_to_db(con, cur, authors: list[AuthorDTO]):
         cur.execute('insert into unmapped_authors values (?,?,?,?,?,?,?)',
                     (None, author.name, author.abbreviation,
                      None, author.matching_type.name, updated_at, updated_at))
-        cur.execute('insert into article_authors values (?,?,?,?,?)',
+        cur.execute('insert into unmapped_article_authors values (?,?,?,?,?)',
                     (None, author.article_id, cur.lastrowid, updated_at, updated_at))
     con.commit()
 

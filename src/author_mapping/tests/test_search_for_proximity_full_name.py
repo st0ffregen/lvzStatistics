@@ -32,7 +32,7 @@ class TestSearchForProximityFullName(TestCase):
 
         search_for_proximity_full_name.search_for_proximity_full_name()
 
-        article_authors_abbreviations = self.cur.execute('SELECT ar.id, au.abbreviation FROM articles ar join article_authors aa on ar.id=aa.article_id join unmapped_authors au on aa.author_id=au.id ').fetchall()
+        article_authors_abbreviations = self.cur.execute('SELECT ar.id, au.abbreviation FROM articles ar join unmapped_article_authors aa on ar.id=aa.article_id join unmapped_authors au on aa.author_id=au.id ').fetchall()
         author_abbreviations = self.cur.execute('select name, abbreviation from unmapped_authors').fetchall()
         article_ids = [row[0] for row in article_authors_abbreviations]
 

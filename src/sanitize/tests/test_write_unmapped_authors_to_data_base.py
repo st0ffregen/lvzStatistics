@@ -23,7 +23,7 @@ class TestWriteAuthorsToDataBase(TestCase):
         self.cur.execute(
             'CREATE TABLE "unmapped_authors" ( "id" INTEGER NOT NULL UNIQUE, "name" TEXT, "abbreviation" TEXT, "matching_certainty" NUMERIC, "matching_type" TEXT, "created_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL, PRIMARY KEY("id" AUTOINCREMENT))')
         self.cur.execute(
-            'CREATE TABLE "article_authors" ( "id" INTEGER NOT NULL UNIQUE, "article_id" INTEGER NOT NULL, "author_id" INTEGER NOT NULL, "created_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL, UNIQUE("article_id","author_id"), PRIMARY KEY("id" AUTOINCREMENT))')
+            'CREATE TABLE "unmapped_article_authors" ( "id" INTEGER NOT NULL UNIQUE, "article_id" INTEGER NOT NULL, "author_id" INTEGER NOT NULL, "created_at" TEXT NOT NULL, "updated_at" TEXT NOT NULL, UNIQUE("article_id","author_id"), PRIMARY KEY("id" AUTOINCREMENT))')
         self.con.commit()
 
         for article in self.articles:
@@ -44,7 +44,7 @@ class TestWriteAuthorsToDataBase(TestCase):
 
         write_unmapped_authors_to_data_base.write_authors_to_database()
 
-        article_author_abbreviation = self.cur.execute('SELECT ar.id, au.name, au.abbreviation FROM articles ar join article_authors aa on ar.id=aa.article_id join unmapped_authors au on aa.author_id=au.id ').fetchall()
+        article_author_abbreviation = self.cur.execute('SELECT ar.id, au.name, au.abbreviation FROM articles ar join unmapped_article_authors aa on ar.id=aa.article_id join unmapped_authors au on aa.author_id=au.id ').fetchall()
 
         # check if the correct author was matched
         self.assertTrue((0, "Mark Daniel", None) in article_author_abbreviation)

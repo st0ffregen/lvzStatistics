@@ -70,7 +70,7 @@ def save_matches_to_db(con, cur, abbreviation_to_name_mapping: dict[AuthorDTO]):
     con.commit()
 
 def get_abbreviations_with_articles(cur):
-    cur.execute('SELECT au.id, au.abbreviation, ar.published_at FROM articles ar join article_authors aa on ar.id=aa.article_id join unmapped_authors au on aa.author_id=au.id where ar.organization = "lvz" and au.matching_type = ? order by ar.published_at asc', (MatchingType.IS_ABBREVIATION.name,))
+    cur.execute('SELECT au.id, au.abbreviation, ar.published_at FROM articles ar join unmapped_article_authors aa on ar.id=aa.article_id join unmapped_authors au on aa.author_id=au.id where ar.organization = "lvz" and au.matching_type = ? order by ar.published_at asc', (MatchingType.IS_ABBREVIATION.name,))
     rows = cur.fetchall()
 
     abbreviations = []
@@ -322,7 +322,7 @@ def get_names_window(cur, focused_abbreviation, months=6) -> list[{str, str, str
     upper_date_limit = (abbreviation_date + relativedelta(months=months)).isoformat()
 
     cur.execute(
-        'SELECT au.name, ar.published_at FROM articles ar join article_authors aa on ar.id=aa.article_id join unmapped_authors au on aa.author_id=au.id where ar.organization = "lvz" and au.matching_type = ? and published_at >= ? and published_at <= ? order by ar.published_at asc', (MatchingType.IS_FULL_NAME, lower_date_limit, upper_date_limit))
+        'SELECT au.name, ar.published_at FROM articles ar join unmapped_article_authors aa on ar.id=aa.article_id join unmapped_authors au on aa.author_id=au.id where ar.organization = "lvz" and au.matching_type = ? and published_at >= ? and published_at <= ? order by ar.published_at asc', (MatchingType.IS_FULL_NAME, lower_date_limit, upper_date_limit))
     fetched_names = cur.fetchall()
     window_names = [{'name': name[0], 'published_at': name[1]} for name in fetched_names]
 
