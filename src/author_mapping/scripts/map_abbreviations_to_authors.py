@@ -132,34 +132,82 @@ def write_to_database(authors, author_mapping, db_file_path="../../../data/inter
 
     insert_mapped_authors(cur, author_mapping=author_mapping)
 
-    insert_unmapped_names(cur, author_mapping=author_mapping, authors=authors)
+    # insert unmapped authors
+    unmapped_names = authors[~authors["full_name"].isin(author_mapping["full_name"])]
+    print(f"insert {unmapped_names.shape[0]} unmapped names into database")
+    insert_unmapped_names(cur, unmapped_names)
 
-    insert_unmapped_abbreviations(cur, author_mapping=author_mapping, authors=authors)
+    # insert unmapped abbreviations
+    unmapped_abbreviations = authors[~authors["abbreviation"].isin(author_mapping["abbreviation"])]
+    print(f"insert {unmapped_abbreviations.shape[0]} unmapped abbreviations into database")
+    insert_unmapped_abbreviations(cur, unmapped_abbreviations)
+
+    all_articles = get_articles(cur)
+    create_new_mapping(cur, all_articles)
 
     print("persist changes to database")
     con.commit()
 
-    all_articles = get_articles(cur)
+
+def create_new_mapping(cur, all_articles):
+    n_authors_not_yet_in_db = 0
     for article in tqdm(all_articles):
         article_id = article['id']
-        article_authors = article['author_array']
-        article_authors_are_abbreviations = article['author_is_abbreviation']
-        for author in article_authors:
-            if article_authors_are_abbreviations[article_authors.index(author)] is False:
-                cur.execute('select an.id from author_names an where an.name_id = (select id from names where name = ?)', (author,))
-            else:
-                cur.execute('select aa.id from author_abbreviations aa where aa.abbreviation_id = (select id from abbreviations where abbreviation = ?)', (author,))
 
-            author_id = cur.fetchone()
+        article = remove_possible_duplicates(article)
+
+        article_authors = article['author_array'] # sometimes there are duplicates in the author array
+        article_authors_are_abbreviations = article['author_is_abbreviation']
+        if article_authors is None:
+            continue
+
+        for author in article_authors:
+            is_abbreviation = article_authors_are_abbreviations[article_authors.index(author)]
+
+            author_id = get_author_id(author, cur, is_abbreviation)
             if author_id is None:
-                raise Exception(f"author {author} is not in database")
+                n_authors_not_yet_in_db += 1
+                if is_abbreviation:
+                    unmapped_abbreviations = pd.DataFrame(columns=['abbreviation'], data=[[author]])
+                    insert_unmapped_abbreviations(cur, unmapped_abbreviations, tqdm_disable=True)
+                else:
+                    unmapped_names = pd.DataFrame(columns=['full_name'], data=[[author]])
+                    insert_unmapped_names(cur, unmapped_names, tqdm_disable=True)
+
+            author_id = get_author_id(author, cur, is_abbreviation)
+            if author_id is None:
+                raise Exception(f"author {author} is not in database even after inserting it!")
 
             author_id = author_id[0]
             time = datetime.utcnow().isoformat()
-            cur.execute('insert into mapped_article_authors values (?,?,?,?,?)', (None, article_id, author_id, time, time))
+            cur.execute('insert into mapped_article_authors values (?,?,?,?,?)',
+                        (None, article_id, author_id, time, time))
 
-    print("persist changes to database")
-    con.commit()
+    print(f"added {n_authors_not_yet_in_db} authors to database")
+
+
+def remove_possible_duplicates(article):
+    # test if there are duplicates in author_array (rarely happens)
+    if article['author_array'] is not None and article['author_is_abbreviation'] is not None and len(article['author_array']) != len(set(article['author_array'])):
+        # remove from author_array and author_is_abbreviation
+        article['author_array'] = list(set(article['author_array']))
+        article['author_is_abbreviation'] = [article['author_is_abbreviation'][article['author_array'].index(author)]
+                                             for author in article['author_array']]
+
+    return article
+
+def get_author_id(author, cur, is_abbreviation):
+    if is_abbreviation:
+        cur.execute(
+            'select aa.author_id from author_abbreviations aa where aa.abbreviation_id = (select id from abbreviations where abbreviation = ?)',
+            (author,))
+    else:
+        cur.execute(
+            'select an.author_id from author_names an where an.name_id = (select id from names where name = ?)',
+            (author,))
+
+    return cur.fetchone()
+
 
 def insert_mapped_authors(cur, author_mapping):
     print(f"insert {author_mapping.shape[0]} mapped authors into database")
@@ -237,11 +285,8 @@ def insert_mapped_authors(cur, author_mapping):
                     (None, author_id, abbreviation_id, time, time))
 
 
-def insert_unmapped_names(cur, author_mapping, authors):
-    # insert unmapped authors
-    unmapped_names = authors[~authors["full_name"].isin(author_mapping["full_name"])]
-    print(f"insert {unmapped_names.shape[0]} unmapped names into database")
-    for index, row in tqdm(unmapped_names.iterrows(), total=len(unmapped_names)):
+def insert_unmapped_names(cur, unmapped_names, tqdm_disable=False):
+    for index, row in tqdm(unmapped_names.iterrows(), total=len(unmapped_names), disable=tqdm_disable):
         name = row["full_name"]
         time = datetime.utcnow().isoformat()
         # create new author entity
@@ -256,11 +301,8 @@ def insert_unmapped_names(cur, author_mapping, authors):
         cur.execute('insert into author_names values (?,?,?,?,?)', (None, author_id, name_id, time, time))
 
 
-def insert_unmapped_abbreviations(cur, author_mapping, authors):
-    # insert unmapped abbreviations
-    unmapped_abbreviations = authors[~authors["abbreviation"].isin(author_mapping["abbreviation"])]
-    print(f"insert {unmapped_abbreviations.shape[0]} unmapped abbreviations into database")
-    for index, row in tqdm(unmapped_abbreviations.iterrows(), total=len(unmapped_abbreviations)):
+def insert_unmapped_abbreviations(cur, unmapped_abbreviations, tqdm_disable=False):
+    for index, row in tqdm(unmapped_abbreviations.iterrows(), total=len(unmapped_abbreviations), disable=tqdm_disable):
         abbreviation = row["abbreviation"]
         time = datetime.utcnow().isoformat()
 
